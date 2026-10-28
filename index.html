@@ -168,6 +168,21 @@ tbody td{padding:6px;border:1px solid rgba(30,37,64,0.7);vertical-align:top;}
   .tt-wrap{border:1px solid #ccc;}
   thead th{background:#f0f0f0!important;color:#000!important;}
 }
+
+/* Subtle UI Polish */
+.card { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.card:hover { border-color: var(--border2); }
+.timetable-block { transition: box-shadow 0.2s ease; }
+.timetable-block:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+.cell-lesson:hover { filter: brightness(1.15); }
+.btn { transition: all 0.18s ease; }
+.btn:hover { transform: translateY(-1px); }
+.list-item { transition: background 0.15s ease; }
+.list-item:hover { background: var(--surface2); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 </style>
 </head>
 <body>
@@ -491,6 +506,19 @@ tbody td{padding:6px;border:1px solid rgba(30,37,64,0.7);vertical-align:top;}
 
   <div id="colorLegend" class="color-legend" style="display:none;"></div>
 
+  <div class="card" style="margin-bottom:12px;padding:12px 16px;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.75rem;font-weight:700;color:var(--text2);text-transform:uppercase;font-family:var(--mono);">View Filter:</span>
+        <select id="filterClassView" onchange="filterTimetableView()" style="width:auto;min-width:180px;padding:6px 12px;font-size:0.75rem;">
+          <option value="all">Display All Classes</option>
+        </select>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text2);">
+        💡 Click on any lesson block to move or swap periods
+      </div>
+    </div>
+  </div>
   <div id="timetableOutput"></div>
 
   <div id="teacherAnalysis" style="display:none;margin-top:16px;">
