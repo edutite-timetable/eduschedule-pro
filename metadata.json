@@ -1,0 +1,6 @@
+{
+  "name": "EduSchedule Pro - AI Timetable Engine",
+  "description": "Production-grade automated school timetabling system powered by Google OR-Tools CP-SAT and modern React interface with zero-clash guarantees, preflight capacity analysis, and instant static site deployment.",
+  "version": "1.0.0",
+  "majorCapabilities": []
+}
