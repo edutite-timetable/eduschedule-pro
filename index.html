@@ -1,20 +1,1318 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EduSchedule Pro - AI Timetable Engine</title>
-    <meta name="description" content="Production-grade automated school timetabling system powered by Google OR-Tools CP-SAT with zero-clash guarantees, preflight capacity analysis, and instant static site deployment." />
-    <meta property="og:title" content="EduSchedule Pro - AI Timetable Engine" />
-    <meta property="og:description" content="Production-grade automated school timetabling system powered by Google OR-Tools CP-SAT." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-[#0b0f19] text-[#e2e8f0] font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>EduSchedule Pro | Automatic Timetable Generator</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+:root{
+  --bg:#080b14;--surface:#0e1220;--surface2:#141826;--surface3:#1c2035;--border:#1e2540;--border2:#262d4a;
+  --accent:#4f8eff;--accent2:#00e5b0;--accent3:#ff5577;--accent4:#ffcc44;--accent5:#a259ff;
+  --text:#dde4f0;--text2:#7a8aaa;--text3:#3a4465;
+  --mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;--display:'Syne',sans-serif;
+  --r:12px;--rs:7px;--shadow:0 12px 40px rgba(0,0,0,0.5);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;overflow-x:hidden;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;position:relative;}
+body::before{content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 10%,rgba(79,142,255,0.09) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 60% at 85% 85%,rgba(0,229,176,0.07) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 40% at 50% 50%,rgba(162,89,255,0.04) 0%,transparent 70%);
+  pointer-events:none;z-index:0;}
+.app{position:relative;z-index:1;max-width:1440px;margin:0 auto;padding:16px 20px 60px;width:100%;}
+.header{text-align:center;padding:24px 0 20px;}
+.header-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,142,255,0.12);border:1px solid rgba(79,142,255,0.25);border-radius:30px;padding:5px 16px;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;font-family:var(--mono);}
+h1{font-family:var(--display);font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;letter-spacing:-0.03em;color:var(--text);}
+h1 span{color:var(--accent);}
+.tagline{margin-top:10px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
+.tagline span{background:var(--surface2);padding:3px 11px;border-radius:20px;border:1px solid var(--border2);font-size:0.72rem;color:var(--text2);}
+.school-bar{text-align:center;margin-bottom:18px;font-size:0.82rem;color:var(--text2);padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);}
+.school-bar strong{color:var(--text);}
+.tabs{display:flex;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:20px;overflow-x:auto;white-space:nowrap;}
+.tab-btn{flex:1 0 auto;min-width:60px;padding:8px 8px;border:none;border-radius:var(--rs);background:transparent;color:var(--text2);font-size:0.72rem;font-weight:600;cursor:pointer;transition:all 0.18s;}
+.tab-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 12px rgba(79,142,255,0.35);}
+.tab-btn:not(.active):hover{background:var(--surface2);color:var(--text);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadeIn 0.2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;margin-bottom:14px;}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.card-icon{width:32px;height:32px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;font-family:var(--display);}
+.ci-blue{background:rgba(79,142,255,0.15);color:#7ab0ff;}
+.ci-teal{background:rgba(0,229,176,0.15);color:var(--accent2);}
+.ci-red{background:rgba(255,85,119,0.15);color:var(--accent3);}
+.ci-yellow{background:rgba(255,204,68,0.15);color:var(--accent4);}
+.ci-purple{background:rgba(162,89,255,0.15);color:var(--accent5);}
+.card-header h3{font-family:var(--display);font-size:0.9rem;font-weight:700;}
+.card-header p{font-size:0.68rem;color:var(--text2);margin-top:2px;}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+.form-row{margin-bottom:10px;}
+label{display:block;font-size:0.7rem;color:var(--text2);margin-bottom:4px;font-weight:600;}
+input,select,textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);padding:8px 10px;color:var(--text);font-size:0.82rem;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,142,255,0.13);}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a8aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;appearance:none;}
+input[type=checkbox]{width:auto;accent-color:var(--accent);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:10px 16px;border:none;border-radius:var(--rs);font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.18s;white-space:nowrap;}
+.btn:hover{transform:translateY(-1px);}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(79,142,255,0.3);}
+.btn-primary:hover{background:#3d7aff;}
+.btn-teal{background:var(--accent2);color:#080b14;}
+.btn-teal:hover{background:#00ccaa;}
+.btn-red{background:var(--accent3);color:#fff;}
+.btn-red:hover{background:#e6334a;}
+.btn-yellow{background:var(--accent4);color:#080b14;}
+.btn-yellow:hover{background:#ffbb22;}
+.btn-purple{background:var(--accent5);color:#fff;}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-sm{padding:5px 10px;font-size:0.7rem;}
+.btn-block{width:100%;}
+.btn-large{padding:14px 20px;font-size:0.95rem;font-family:var(--display);}
+.btn-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.grade-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.grade-chip{padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;background:rgba(79,142,255,0.12);border:1px solid rgba(79,142,255,0.25);color:#7ab0ff;display:inline-flex;align-items:center;gap:6px;}
+.grade-chip button{background:none;border:none;color:var(--accent3);cursor:pointer;font-size:0.9rem;padding:0;line-height:1;}
+.flex-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
+.flex-row .form-row{flex:1;min-width:120px;}
+.grade-range-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;}
+.grade-range-row .form-row{flex:1;min-width:70px;margin-bottom:0;}
+.stats-bar{display:flex;flex-wrap:wrap;gap:12px;padding:12px 16px;background:var(--surface2);border-radius:var(--rs);margin-bottom:16px;justify-content:space-around;}
+.stat-item{display:flex;flex-direction:column;align-items:center;}
+.stat-value{font-size:1.3rem;font-weight:700;color:var(--accent);font-family:var(--mono);}
+.stat-label{font-size:0.6rem;color:var(--text2);text-transform:uppercase;}
+.banner{padding:10px 14px;border-radius:var(--rs);font-size:0.78rem;margin-bottom:10px;}
+.banner-success{background:rgba(0,229,176,0.08);border:1px solid rgba(0,229,176,0.25);color:var(--accent2);}
+.banner-warn{background:rgba(255,85,119,0.08);border:1px solid rgba(255,85,119,0.25);color:var(--accent3);}
+.banner-info{background:rgba(79,142,255,0.08);border:1px solid rgba(79,142,255,0.25);color:#7ab0ff;}
+.assign-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:10px;}
+.assign-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);padding:10px;}
+.assign-card-title{font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:5px;font-family:var(--display);}
+.assign-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:0.75rem;gap:5px;}
+.assign-row label{font-size:0.72rem;color:var(--text2);margin:0;cursor:pointer;flex:1;}
+.assign-row input[type=number]{width:48px;padding:3px 5px;font-size:0.72rem;}
+.assigned-note{font-size:0.65rem;color:var(--accent3);font-style:italic;}
+.bulk-toolbar{padding:10px 12px;background:var(--surface2);border-radius:var(--rs);border:1px solid var(--border2);margin:12px 0;}
+.toolbar-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.toolbar-row select{width:auto;min-width:100px;}
+.toolbar-row input[type=text]{width:120px;}
+.list-item{display:flex;align-items:flex-start;justify-content:space-between;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:6px;font-size:0.78rem;gap:10px;}
+.list-item-info{flex:1;}
+.list-item-title{font-weight:600;color:var(--text);font-size:0.8rem;}
+.list-item-sub{font-size:0.68rem;color:var(--text2);margin-top:3px;}
+.empty-state{text-align:center;padding:20px;color:var(--text3);font-size:0.78rem;}
+.time-apply-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.time-apply-btn{padding:14px 24px;font-size:1rem;font-weight:700;width:100%;background:linear-gradient(135deg,var(--accent),var(--accent5));color:#fff;border:none;border-radius:var(--rs);cursor:pointer;}
+.suggestions-panel{margin:16px 0;padding:16px;background:var(--surface);border:2px solid var(--accent2);border-radius:var(--r);border-left:6px solid var(--accent2);}
+.suggestions-panel h4{color:var(--accent2);font-size:0.95rem;margin-bottom:12px;}
+.suggestion-item{padding:12px;background:var(--surface2);border-radius:var(--rs);margin-bottom:10px;}
+.suggestion-header{font-weight:700;color:var(--accent2);margin-bottom:6px;font-size:0.85rem;}
+.suggestion-fixes{margin-left:16px;color:var(--text2);font-size:0.78rem;}
+.suggestion-fixes li{margin-bottom:4px;}
+.summary-banner{background:var(--surface2);border:1px solid var(--accent4);padding:12px 16px;border-radius:var(--rs);margin-bottom:20px;font-size:0.82rem;color:var(--text);}
+.summary-banner strong{color:var(--accent4);}
+.gen-options{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.gen-option{padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;text-align:center;transition:all 0.18s;}
+.gen-option.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.gen-option .title{font-weight:700;font-size:0.8rem;margin-bottom:4px;}
+.gen-option .desc{font-size:0.65rem;opacity:0.7;}
+@media(max-width:600px){.gen-options{grid-template-columns:repeat(2,1fr);}}
+.tt-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);margin-bottom:24px;}
+.tt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.tt-header h2{font-family:var(--display);font-size:1rem;font-weight:700;}
+table{width:100%;border-collapse:collapse;min-width:680px;}
+thead th{background:var(--surface2);color:var(--text2);font-size:0.68rem;font-weight:700;text-transform:uppercase;padding:8px 6px;border-bottom:2px solid var(--border2);}
+tbody td{padding:6px;border:1px solid rgba(30,37,64,0.7);vertical-align:top;}
+.day-cell{font-family:var(--mono);font-size:0.65rem;color:var(--text3);background:var(--surface2)!important;text-align:center;font-weight:600;}
+.cell-lesson{background:var(--surface);}
+.cell-lesson .subj{font-size:0.74rem;font-weight:700;color:var(--text);}
+.cell-lesson .tchr{font-size:0.62rem;color:var(--text2);}
+.cell-break,.cell-tea,.cell-lunch{text-align:center;font-size:0.65rem;font-weight:700;}
+.cell-common{background:rgba(255,204,68,0.12);text-align:center;}
+.cell-free{background:var(--surface);text-align:center;}
+.loading-overlay{position:fixed;inset:0;background:rgba(8,11,20,0.96);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(10px);}
+.loading-box{text-align:center;padding:30px;}
+.spinner{width:60px;height:60px;position:relative;margin:0 auto 24px;}
+.sr{position:absolute;inset:0;border-radius:50%;border:2.5px solid transparent;}
+.sr:nth-child(1){border-top-color:var(--accent);animation:spin 1.4s linear infinite;}
+.sr:nth-child(2){inset:8px;border-right-color:var(--accent2);animation:spin 1.0s linear infinite reverse;}
+.sr:nth-child(3){inset:16px;border-bottom-color:var(--accent5);animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-title{font-family:var(--display);font-size:1.2rem;font-weight:700;margin-bottom:5px;}
+.loading-sub{font-size:0.78rem;color:var(--text2);margin-bottom:16px;}
+.loading-bar{width:200px;height:3px;background:var(--surface2);border-radius:2px;overflow:hidden;margin:0 auto;}
+.loading-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent5));border-radius:2px;animation:progress 2.5s ease-in-out infinite;}
+@keyframes progress{0%{width:5%;}50%{width:75%;}100%{width:5%;}}
+.color-legend{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;background:var(--surface);border-radius:var(--rs);margin-bottom:12px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:0.7rem;}
+.legend-dot{width:12px;height:12px;border-radius:50%;}
+.export-buttons{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+.fp-badge{background:rgba(79,142,255,0.12);color:var(--accent);padding:2px 6px;border-radius:20px;font-size:0.6rem;font-family:var(--mono);}
+.load-bar-bg{height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-top:3px;}
+.load-bar-fill{height:100%;border-radius:2px;transition:width 0.5s ease;}
+.progress-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(8,11,20,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.progress-box{background:var(--surface);padding:20px 28px;border-radius:var(--r);text-align:center;max-width:300px;border:1px solid var(--border2);}
+.progress-title{font-family:var(--display);font-size:1rem;margin-bottom:6px;}
+.progress-detail{font-size:0.72rem;color:var(--text2);margin-top:6px;}
+@media print{
+  body{background:#fff;color:#000;}
+  .tabs,.header,.school-bar,.btn,.stats-bar,.export-panel,.gen-options,.bulk-toolbar{display:none!important;}
+  .tt-wrap{border:1px solid #ccc;}
+  thead th{background:#f0f0f0!important;color:#000!important;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div class="header-badge">Version 28.6 Professional</div>
+  <h1>Edu<span>Schedule</span> Pro</h1>
+  <div class="tagline">
+    <span>Master Timetable</span><span>High‑Priority Subjects</span><span>Auto‑Adjust</span>
+    <span>Export Options</span><span>Configurable Backend</span>
+  </div>
+</div>
+
+<div class="school-bar" id="schoolBar">No school configured -- go to Setup</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('setup')">Setup</button>
+  <button class="tab-btn" onclick="switchTab('time')">Time</button>
+  <button class="tab-btn" onclick="switchTab('teachers')">Teachers</button>
+  <button class="tab-btn" onclick="switchTab('areas')">Learning Areas</button>
+  <button class="tab-btn" onclick="switchTab('rules')">Rules</button>
+  <button class="tab-btn" onclick="switchTab('generate')">Generate</button>
+  <button class="tab-btn" onclick="switchTab('output')">Output</button>
+</div>
+
+<!-- ========= SETUP TAB ========= -->
+<div id="tab-setup" class="tab-panel active">
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-blue">S</div><div><h3>School Information</h3></div></div>
+    <div class="grid-2">
+      <div class="form-row"><label>School Name</label><input type="text" id="schoolName" placeholder="e.g. Nairobi Primary School"></div>
+      <div class="form-row"><label>Academic Year</label><input type="number" id="schoolYear" value="2025"></div>
+      <div class="form-row"><label>Term</label><select id="schoolTerm"><option>Term 1</option><option>Term 2</option><option>Term 3</option></select></div>
+      <div class="form-row"><label>Phase / Level</label><input type="text" id="schoolPhase" placeholder="e.g. Junior Secondary"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-purple">⚙</div><div><h3>Backend Connection</h3></div></div>
+    <div class="form-row">
+      <label>Backend URL (must include /generate path)</label>
+      <input type="text" id="backendUrl" value="https://edutite-timetable.onrender.com/generate" 
+             placeholder="e.g. http://localhost:5000/generate" style="font-family:var(--mono);">
+      <div style="font-size:0.7rem;color:var(--text2);margin-top:4px;">
+        Change this to your own backend server if needed.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-teal">G</div><div><h3>Grades & Streams</h3></div></div>
+
+    <div class="form-row">
+      <label>
+        <input type="checkbox" id="useStreams" checked onchange="toggleStreams()" style="width:auto; margin-right:6px;">
+        Use Streams (multiple classes per grade)
+      </label>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label>Single Grade</label>
+      <div class="flex-row">
+        <div class="form-row"><input type="number" id="newGrade" min="1" max="13" placeholder="Grade"></div>
+        <div class="form-row" id="singleStreamWrapper"><input type="number" id="gradeStreams" min="1" max="20" value="1" placeholder="Streams"></div>
+        <button class="btn btn-primary" onclick="addGrade()">Add</button>
+      </div>
+      <div class="form-row" id="singleStreamLabelWrapper"><label>Stream Labels (comma-separated)</label><input type="text" id="gradeStreamNames" placeholder="A, B, C"></div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <label>Grade Range</label>
+      <div class="grade-range-row">
+        <div class="form-row"><label>From</label><input type="number" id="rangeFrom" min="1" max="13" placeholder="7"></div>
+        <div class="form-row"><label>To</label><input type="number" id="rangeTo" min="1" max="13" placeholder="9"></div>
+        <div class="form-row" id="rangeStreamWrapper"><label>Streams</label><input type="number" id="rangeStreams" min="1" value="1"></div>
+        <button class="btn btn-teal" onclick="addGradeRange()">Add Range</button>
+      </div>
+      <div class="form-row" id="rangeStreamLabelWrapper"><label>Stream Labels for Range</label><input type="text" id="rangeStreamNames" placeholder="Shared labels"></div>
+    </div>
+
+    <div class="grade-chips" id="gradeChips"></div>
+    <div style="margin-top:12px;"><button class="btn btn-red btn-sm" onclick="bulkRemoveGrades()">Bulk Remove Grades</button></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-yellow">D</div><div><h3>Data Management</h3></div></div>
+    <div class="btn-group">
+      <button class="btn btn-purple" onclick="loadDemoSchool()">Load Demo High School</button>
+      <button class="btn btn-primary" onclick="saveConfig()">Export Config JSON</button>
+      <button class="btn btn-teal" onclick="loadConfig()">Import Config JSON</button>
+      <button class="btn btn-yellow" onclick="runPreflight()">Preflight Feasibility Audit</button>
+      <button class="btn btn-red" onclick="resetAll()">Reset Everything</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========= TIME TAB ========= -->
+<div id="tab-time" class="tab-panel">
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-purple">T</div><div><h3>Time Configuration</h3></div></div>
+    <div class="grid-2">
+      <div class="form-row"><label>School Start Time</label><input type="time" id="startTime" value="07:50"></div>
+      <div class="form-row"><label>School End Time</label><input type="time" id="endTime" value="14:40"></div>
+      <div class="form-row"><label>Lesson Duration (minutes)</label><input type="number" id="lessonDuration" value="40" min="20" max="90"></div>
+      <div class="form-row"><label>Working Days</label><select id="workingDays"><option value="5">Mon-Fri (5 days)</option><option value="6">Mon-Sat (6 days)</option></select></div>
+    </div>
+    <div class="form-row"><label>Lesson Block Pattern (e.g. 2:2:2:2)</label><input type="text" id="lessonPattern" value="2:2:2:2"></div>
+    <div class="grid-3">
+      <div class="form-row"><label>Short Break (min)</label><input type="number" id="shortBreakDuration" value="15" min="5" max="60"></div>
+      <div class="form-row"><label>Tea Break (min)</label><input type="number" id="teaBreakDuration" value="20" min="5" max="60"></div>
+      <div class="form-row"><label>Lunch Break (min)</label><input type="number" id="lunchBreakDuration" value="45" min="15" max="90"></div>
+    </div>
+    <div class="time-apply-section">
+      <button class="time-apply-btn" onclick="generateTimeSlots()">APPLY TIME SETTINGS</button>
+    </div>
+    <div id="timeSlotsPreview" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- ========= TEACHERS TAB ========= -->
+<div id="tab-teachers" class="tab-panel">
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-yellow">T</div><div><h3>Add / Edit Teacher</h3></div></div>
+    <div class="grid-2">
+      <div class="form-row"><label>Full Name</label><input type="text" id="teacherName" placeholder="e.g. Jane Smith" oninput="autoFillCode()"></div>
+      <div class="form-row"><label>Short Code (2-4 chars)</label><input type="text" id="teacherCode" maxlength="4" style="text-transform:uppercase;font-family:var(--mono);" placeholder="JSM"></div>
+    </div>
+    <div class="grid-2">
+      <div class="form-row"><label>Max Weekly Lessons</label><input type="number" id="maxWeeklyLessons" min="1" max="60" placeholder="e.g. 28"></div>
+      <div class="form-row"><label>Max Lessons Per Day</label><input type="number" id="maxDailyLessons" value="8" min="1" max="12"></div>
+    </div>
+    <div class="form-row"><label>Unavailable Days (comma-separated)</label><input type="text" id="teacherUnavailDays" placeholder="e.g. WED, FRI"></div>
+    <div class="form-row">
+      <label>
+        <input type="checkbox" id="specialTeacher" style="width:auto;margin-right:6px;">
+        Special Teacher (Allowed more free periods, no workload limits)
+      </label>
+    </div>
+    
+    <div class="bulk-toolbar">
+      <div class="toolbar-row">
+        <span style="font-size:0.7rem;color:var(--text2);font-weight:600;">Bulk Actions:</span>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSelectAll(true)">Select All</button>
+        <button class="btn btn-ghost btn-sm" onclick="bulkSelectAll(false)">Deselect All</button>
+        <select id="bulkGradeFilter" onchange="filterByGrade(this.value)"><option value="">All Grades</option></select>
+        <select id="bulkSubjectFilter" onchange="filterBySubject(this.value)"><option value="">All Subjects</option></select>
+        <input type="text" id="bulkGradeRange" placeholder="Grades: 4-6,8" style="width:120px;">
+        <button class="btn btn-teal btn-sm" onclick="applyBulkLessons()">Set Lessons</button>
+        <button class="btn btn-purple btn-sm" onclick="bulkAssignSubjects()">Bulk Assign</button>
+        <input type="number" id="bulkLessonValue" min="1" max="20" value="4" style="width:60px;">
+      </div>
+      <div class="toolbar-row" style="margin-top:8px;">
+        <span style="font-size:0.7rem;color:var(--text2);">Quick assign:</span>
+        <select id="quickAssignSubject"><option value="">Select Subject</option></select>
+        <button class="btn btn-accent btn-sm" onclick="applySubjectToAllGrades()">Apply to All Grades</button>
+      </div>
+    </div>
+    
+    <div id="teacherAssignPanel"></div>
+    
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveTeacher()">Save Teacher</button>
+      <button class="btn btn-purple" onclick="bulkAssignTeacher()">Bulk Pre-fill</button>
+      <button class="btn btn-ghost" onclick="clearTeacherForm()">Clear</button>
+    </div>
+    <div id="teacherFormError" class="banner banner-warn" style="display:none;margin-top:8px;"></div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-blue">L</div><div><h3>Teacher List <span id="teacherCount"></span></h3></div></div>
+    <div id="teacherList"></div>
+  </div>
+</div>
+
+<!-- ========= LEARNING AREAS TAB ========= -->
+<div id="tab-areas" class="tab-panel">
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-teal">L</div><div><h3>Learning Areas (Subjects)</h3></div></div>
+    <div class="grid-2">
+      <div class="form-row"><label>Subject / Learning Area Name</label><input type="text" id="subjectName" placeholder="e.g. Mathematics"></div>
+      <div class="form-row"><label>Default Lessons / Week</label><input type="number" id="subjectLessons" value="4" min="1" max="20"></div>
+    </div>
+    <button class="btn btn-teal btn-block" onclick="addSubject()">Add Learning Area</button>
+    <div id="subjectList" style="margin-top:14px;"></div>
+  </div>
+  
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-purple">O</div><div><h3>Per-Class Override</h3><p>Override lessons/week for specific grade x learning area</p></div></div>
+    <div class="grid-3">
+      <div class="form-row"><label>Grade</label><select id="reqGrade"></select></div>
+      <div class="form-row"><label>Learning Area</label><select id="reqSubject"></select></div>
+      <div class="form-row"><label>Lessons/Week</label><input type="number" id="reqLessons" value="4" min="0" max="20"></div>
+    </div>
+    <button class="btn btn-purple btn-block" onclick="addClassRequirement()">Set Override</button>
+    <div id="requirementsList" style="margin-top:14px;"></div>
+  </div>
+</div>
+
+<!-- ========= RULES TAB ========= -->
+<div id="tab-rules" class="tab-panel">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-icon ci-red">B</div><div><h3>Teacher Blacklist</h3><p>Block a teacher from a grade</p></div></div>
+      <div class="form-row"><label>Teacher</label><select id="blTeacher"></select></div>
+      <div class="form-row"><label>Grade</label><select id="blGrade"></select></div>
+      <button class="btn btn-red btn-block" onclick="addBlacklist()">Add Block</button>
+      <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="bulkBlacklistTeacher()">Bulk Block Teacher</button></div>
+      <div id="blacklistDisplay" style="margin-top:10px;"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-icon ci-red">S</div><div><h3>Subject Blacklist</h3><p>Block a subject from a grade</p></div></div>
+      <div class="form-row"><label>Subject</label><select id="blSubject"></select></div>
+      <div class="form-row"><label>Grade</label><select id="blSubjGrade"></select></div>
+      <button class="btn btn-red btn-block" onclick="addSubjectBlacklist()">Add Block</button>
+      <div style="margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="bulkBlacklistSubject()">Bulk Block Subject</button></div>
+      <div id="subjBlacklistDisplay" style="margin-top:10px;"></div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-icon ci-blue">D</div><div><h3>Display Options</h3></div></div>
+      <div class="form-row"><label>Teacher Display</label><select id="useTeacherCodes"><option value="0">Full Names</option><option value="1">Short Codes</option></select></div>
+      <div class="form-row"><label>Color-Code By</label><select id="colorCodeBy" onchange="renderColorLegend()"><option value="none">None</option><option value="subject">Subject</option><option value="teacher">Teacher</option></select></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-icon ci-purple">R</div><div><h3>Scheduling Rules</h3></div></div>
+      <div class="form-row"><label>Avoid back-to-back same subject</label><select id="ruleNoRepeat"><option value="1">Yes</option><option value="0">No</option></select></div>
+      <div class="form-row"><label>Global Max Lessons/Day</label><input type="number" id="maxTeacherPerDay" value="8" min="1" max="12"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-teal">C</div><div><h3>Common Session (Assembly)</h3></div></div>
+    <div class="grid-2">
+      <div class="form-row"><label>Enabled</label><select id="commonSessionEnabled"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div class="form-row"><label>Name</label><input type="text" id="commonSessionName" value="Assembly"></div>
+      <div class="form-row"><label>Day</label><select id="commonSessionDay"><option value="MON">Mon</option><option value="FRI" selected>Fri</option></select></div>
+      <div class="form-row"><label>Lesson Slot</label><select id="commonSessionSlot"></select></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========= GENERATE TAB ========= -->
+<div id="tab-generate" class="tab-panel">
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-blue">G</div><div><h3>Generate Timetable</h3></div></div>
+    <div class="gen-options">
+      <div class="gen-option active" onclick="setGenScope('master')" id="opt-master"><div class="title">Master</div><div class="desc">Entire School</div></div>
+      <div class="gen-option" onclick="setGenScope('grades')" id="opt-grades"><div class="title">All Grades</div><div class="desc">Each Grade</div></div>
+      <div class="gen-option" onclick="setGenScope('teachers')" id="opt-teachers"><div class="title">All Teachers</div><div class="desc">Each Teacher</div></div>
+      <div class="gen-option" onclick="setGenScope('all')" id="opt-all"><div class="title">Complete</div><div class="desc">All Above</div></div>
+    </div>
+    <div id="preGenWarnings"></div>
+    <div class="form-row"><label>Target Specific Grades (blank = all)</label><input type="text" id="targetGrades" placeholder="e.g. 7,8,9 or 4-6"></div>
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-value" id="stTeachers">0</span><span class="stat-label">Teachers</span></div>
+      <div class="stat-item"><span class="stat-value" id="stGrades">0</span><span class="stat-label">Grades</span></div>
+      <div class="stat-item"><span class="stat-value" id="stSubjects">0</span><span class="stat-label">Subjects</span></div>
+      <div class="stat-item"><span class="stat-value" id="stSlots">0</span><span class="stat-label">Slots/Day</span></div>
+      <div class="stat-item"><span class="stat-value" id="stCapacity">-</span><span class="stat-label">Capacity</span></div>
+    </div>
+    <div id="capacityMsg"></div>
+    <button id="genBtn" class="btn btn-primary btn-block btn-large" onclick="generateTimetable()">GENERATE TIMETABLE</button>
+    <div id="genError" class="banner banner-warn" style="display:none;margin-top:10px;"></div>
+  </div>
+</div>
+
+<!-- ========= OUTPUT TAB ========= -->
+<div id="tab-output" class="tab-panel">
+  <div class="card">
+    <div class="card-header"><div class="card-icon ci-teal">E</div><div><h3>Export & Download Options</h3></div></div>
+    <div class="form-row">
+      <label>Export Type</label>
+      <select id="exportType" onchange="updateExportOptions()">
+        <option value="all">All Classes & Teachers (Complete School)</option>
+        <option value="allClasses">All Classes Only</option>
+        <option value="allTeachers">All Teachers Only</option>
+        <option value="singleGrade">Single Grade</option>
+        <option value="singleTeacher">Single Teacher</option>
+      </select>
+    </div>
+    <div id="singleItemSelect" style="display:none;">
+      <div class="form-row">
+        <label>Select Item</label>
+        <select id="singleItemDropdown"></select>
+      </div>
+    </div>
+    <div class="export-buttons">
+      <button class="btn btn-teal btn-sm" onclick="exportCSV()">Export CSV (Excel)</button>
+      <button class="btn btn-primary" onclick="exportAsPDF()">Download PDF</button>
+      <button class="btn btn-teal" onclick="exportAsImage()">Download Image (PNG)</button>
+      <button class="btn btn-yellow" onclick="exportAllPDF()">All-in-One PDF</button>
+      <button class="btn btn-ghost" onclick="window.print()">Print</button>
+    </div>
+    <div class="grid-3">
+      <div class="form-row"><label>Page Size</label><select id="pdfSize"><option value="a3">A3 (Best)</option><option value="a4">A4</option><option value="legal">Legal</option></select></div>
+      <div class="form-row"><label>Orientation</label><select id="pdfOrient"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></div>
+      <div class="form-row"><label>Quality</label><select id="pdfQuality"><option value="2">High</option><option value="1.5">Medium</option><option value="1">Standard</option></select></div>
+    </div>
+  </div>
+
+  <div id="reductionsPanel" style="display:none;">
+    <div class="banner banner-success" id="reductionsText"></div>
+  </div>
+
+  <div id="suggestionsSummary" style="display:none;">
+    <div class="summary-banner" id="summaryText"></div>
+  </div>
+
+  <div id="suggestionsPanel" class="suggestions-panel" style="display:none;">
+    <h4>Suggested Fixes</h4>
+    <div id="suggestionsList"></div>
+  </div>
+
+  <div id="violationsPanel" style="display:none;margin-bottom:14px;">
+    <div class="card" style="border-left:4px solid var(--accent4);">
+      <div class="card-header"><div class="card-icon ci-yellow">V</div><div><h3>Constraint Relaxations</h3></div></div>
+      <div id="violationsList"></div>
+    </div>
+  </div>
+
+  <div id="colorLegend" class="color-legend" style="display:none;"></div>
+
+  <div id="timetableOutput"></div>
+
+  <div id="teacherAnalysis" style="display:none;margin-top:16px;">
+    <div class="grid-2">
+      <div class="card"><div class="card-header"><div class="card-icon ci-blue">W</div><div><h3>Teacher Workload</h3></div></div><div id="teacherLoadBars"></div></div>
+      <div class="card"><div class="card-header"><div class="card-icon ci-teal">F</div><div><h3>Free Periods</h3></div></div><div id="teacherFreeperiods"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="progressOverlay" class="progress-overlay" style="display:none;">
+  <div class="progress-box">
+    <div class="spinner" style="width:40px;height:40px;margin:0 auto 16px;"><div class="sr"></div><div class="sr"></div><div class="sr"></div></div>
+    <div class="progress-title" id="progressTitle">Generating PDF</div>
+    <div class="progress-detail" id="progressDetail"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+'use strict';
+
+function esc(s){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+function showToast(msg,type='success'){ const t=document.createElement('div'); t.textContent=msg; Object.assign(t.style,{position:'fixed',bottom:'20px',right:'20px',zIndex:9998,background:type==='success'?'var(--accent2)':type==='error'?'var(--accent3)':'var(--accent4)',color:'#080b14',padding:'10px 18px',borderRadius:'8px',fontSize:'0.84rem',fontWeight:'600'}); document.body.appendChild(t); setTimeout(()=>t.remove(),3500); }
+function t2m(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+function m2t(m){ return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function getWorkingDays(){ return document.getElementById('workingDays')?.value==='6'?['MON','TUE','WED','THU','FRI','SAT']:['MON','TUE','WED','THU','FRI']; }
+function lessonSlots(){ return state.timeSlots.filter(s=>s.type==='lesson'); }
+function genCode(name){ if(!name) return 'TCH'; const p=name.trim().split(/\s+/); return p.length>=2?(p[0][0]+p[p.length-1].slice(0,2)).toUpperCase():name.slice(0,3).toUpperCase(); }
+function parseRangeInput(input){ if(!input) return []; const r=new Set(); input.split(',').map(p=>p.trim()).forEach(p=>{ if(p.includes('-')){ const [s,e]=p.split('-').map(Number); for(let i=Math.min(s,e);i<=Math.max(s,e);i++) r.add(i); } else { const n=parseInt(p); if(!isNaN(n)) r.add(n); } }); return [...r]; }
+function effectiveLessons(grade,subject){ const k=`${grade}|${subject}`; return state.classRequirements.has(k)?state.classRequirements.get(k).requiredLessons:(state.subjects.get(subject)?.defaultLessons??4); }
+function colorFor(key,map){ if(!map.has(key)) map.set(key,['#4f8eff','#00e5b0','#ff5577','#ffcc44','#a259ff','#ff8c42','#00c4e8','#e84393','#8bc34a','#ff6b35','#2196f3','#9c27b0','#00bcd4','#ff9800','#4caf50','#e91e63','#3f51b5','#009688','#cddc39','#f44336','#03a9f4','#673ab7','#ff5722','#607d8b'][map.size%24]); return map.get(key); }
+
+function getBackendUrl() {
+    const url = document.getElementById('backendUrl')?.value?.trim();
+    return url || 'https://edutite-timetable.onrender.com/generate';
+}
+
+let state = {
+  grades: new Set(),
+  gradeStreams: {},
+  gradeStreamNames: {},
+  subjects: new Map(),
+  teachers: new Map(),
+  classRequirements: new Map(),
+  blacklist: new Set(),
+  subjectBlacklist: new Set(),
+  timeSlots: [],
+  teacherCodes: new Map(),
+  teacherColors: new Map(),
+  subjectColors: new Map(),
+  highPrioritySubjects: new Set(),
+  schoolInfo: {name:'',year:'2025',term:'Term 1',phase:''},
+  generated: {},
+  teacherTT: {},
+  commonSession: {enabled:false,name:'Assembly',day:'FRI',slotIndex:0},
+  currentView: 'classes',
+  editingTeacher: null,
+  genScope: 'master',
+  backendUrl: 'https://edutite-timetable.onrender.com/generate'
+};
+
+const STORAGE_KEY = 'eduschedule_v28_6';
+
+function autoSaveState() {
+    try {
+        const data = {
+            version: 28.6,
+            schoolInfo: state.schoolInfo,
+            grades: [...state.grades],
+            gradeStreams: state.gradeStreams,
+            gradeStreamNames: state.gradeStreamNames,
+            subjects: [...state.subjects.entries()],
+            teachers: Object.fromEntries([...state.teachers.entries()].map(([k,v])=>[k,{...v,unavailDays:[...(v.unavailDays||[])],assignments:v.assignments||[],isSpecial:v.isSpecial||false}])),
+            classRequirements: [...state.classRequirements.entries()],
+            blacklist: [...state.blacklist],
+            subjectBlacklist: [...state.subjectBlacklist],
+            timeSlots: state.timeSlots,
+            teacherCodes: Object.fromEntries(state.teacherCodes),
+            teacherColors: Object.fromEntries(state.teacherColors),
+            subjectColors: Object.fromEntries(state.subjectColors),
+            highPrioritySubjects: [...state.highPrioritySubjects],
+            commonSession: state.commonSession,
+            streamsEnabled: document.getElementById('useStreams')?.checked ?? true,
+            backendUrl: document.getElementById('backendUrl')?.value || state.backendUrl,
+            workingDays: document.getElementById('workingDays')?.value||'5',
+            startTime: document.getElementById('startTime')?.value||'07:50',
+            endTime: document.getElementById('endTime')?.value||'14:40',
+            lessonDuration: document.getElementById('lessonDuration')?.value||'40',
+            lessonPattern: document.getElementById('lessonPattern')?.value||'2:2:2:2',
+            shortBreak: document.getElementById('shortBreakDuration')?.value||'15',
+            teaBreak: document.getElementById('teaBreakDuration')?.value||'20',
+            lunchBreak: document.getElementById('lunchBreakDuration')?.value||'45',
+            rules: {
+                ruleNoRepeat: document.getElementById('ruleNoRepeat')?.value||'0',
+                maxTeacherPerDay: document.getElementById('maxTeacherPerDay')?.value||'8',
+                useTeacherCodes: document.getElementById('useTeacherCodes')?.value||'0',
+                colorCodeBy: document.getElementById('colorCodeBy')?.value||'none'
+            },
+            lastSaved: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch(e) {}
+}
+
+function autoRestoreState() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if(!saved) return false;
+        const d = JSON.parse(saved);
+        if(d.schoolInfo){ state.schoolInfo = d.schoolInfo; document.getElementById('schoolName').value = d.schoolInfo.name||''; document.getElementById('schoolYear').value = d.schoolInfo.year||'2025'; document.getElementById('schoolTerm').value = d.schoolInfo.term||'Term 1'; document.getElementById('schoolPhase').value = d.schoolInfo.phase||''; updateSchoolBar(); }
+        if(d.grades){ state.grades = new Set(d.grades); state.gradeStreams = d.gradeStreams||{}; state.gradeStreamNames = d.gradeStreamNames||{}; }
+        if(d.subjects) state.subjects = new Map(d.subjects);
+        if(d.teachers) state.teachers = new Map(Object.entries(d.teachers).map(([k,v])=>[k,{...v,unavailDays:new Set(v.unavailDays||[])}]));
+        if(d.classRequirements) state.classRequirements = new Map(d.classRequirements);
+        if(d.blacklist) state.blacklist = new Set(d.blacklist);
+        if(d.subjectBlacklist) state.subjectBlacklist = new Set(d.subjectBlacklist);
+        if(d.timeSlots) state.timeSlots = d.timeSlots;
+        if(d.teacherCodes) state.teacherCodes = new Map(Object.entries(d.teacherCodes));
+        if(d.teacherColors) state.teacherColors = new Map(Object.entries(d.teacherColors||{}));
+        if(d.subjectColors) state.subjectColors = new Map(Object.entries(d.subjectColors||{}));
+        if(d.highPrioritySubjects) state.highPrioritySubjects = new Set(d.highPrioritySubjects);
+        if(d.commonSession) state.commonSession = d.commonSession;
+        if(d.streamsEnabled !== undefined) document.getElementById('useStreams').checked = d.streamsEnabled;
+        if(d.backendUrl) {
+            document.getElementById('backendUrl').value = d.backendUrl;
+            state.backendUrl = d.backendUrl;
+        }
+        toggleStreams();
+        if(d.startTime) document.getElementById('startTime').value = d.startTime;
+        if(d.endTime) document.getElementById('endTime').value = d.endTime;
+        if(d.lessonDuration) document.getElementById('lessonDuration').value = d.lessonDuration;
+        if(d.lessonPattern) document.getElementById('lessonPattern').value = d.lessonPattern;
+        if(d.shortBreak) document.getElementById('shortBreakDuration').value = d.shortBreak;
+        if(d.teaBreak) document.getElementById('teaBreakDuration').value = d.teaBreak;
+        if(d.lunchBreak) document.getElementById('lunchBreakDuration').value = d.lunchBreak;
+        if(d.workingDays) document.getElementById('workingDays').value = d.workingDays;
+        if(d.rules){
+            document.getElementById('ruleNoRepeat').value = d.rules.ruleNoRepeat||'0';
+            document.getElementById('maxTeacherPerDay').value = d.rules.maxTeacherPerDay||'8';
+            document.getElementById('useTeacherCodes').value = d.rules.useTeacherCodes||'0';
+            document.getElementById('colorCodeBy').value = d.rules.colorCodeBy||'none';
+        }
+        if(d.commonSession){
+            document.getElementById('commonSessionEnabled').value = d.commonSession.enabled?'1':'0';
+            document.getElementById('commonSessionName').value = d.commonSession.name||'Assembly';
+            document.getElementById('commonSessionDay').value = d.commonSession.day||'FRI';
+        }
+        const csSlot = document.getElementById('commonSessionSlot');
+        if(csSlot && state.timeSlots.length) csSlot.innerHTML = state.timeSlots.map((s,i)=>`<option value="${i}" ${i===state.commonSession.slotIndex?'selected':''}>${i+1}: ${s.time}</option>`).join('');
+        renderGradeChips(); renderSubjectList(); renderTeacherList(); renderRequirements(); renderBlacklists();
+        populateGradeSubjectSelects(); refreshRuleSelects(); initializeBulkFilters(); populateQuickAssignSubject();
+        if(state.timeSlots.length) renderSlotsPreview();
+        updateStats(); renderColorLegend();
+        showToast('Previous session restored', 'success');
+        return true;
+    } catch(e) { return false; }
+}
+
+function clearSavedState() { localStorage.removeItem(STORAGE_KEY); showToast('Auto-save cleared'); }
+
+function updateStats(){
+  document.getElementById('stTeachers').textContent = state.teachers.size;
+  document.getElementById('stGrades').textContent = state.grades.size;
+  document.getElementById('stSubjects').textContent = state.subjects.size;
+  document.getElementById('stSlots').textContent = lessonSlots().length;
+  const days = getWorkingDays().length;
+  const cap = lessonSlots().length * days;
+  const capEl = document.getElementById('stCapacity');
+  if(capEl) capEl.textContent = cap||'-';
+}
+function updateSchoolBar(){
+  const n = document.getElementById('schoolName')?.value||'', t = document.getElementById('schoolTerm')?.value||'', y = document.getElementById('schoolYear')?.value||'', ph = document.getElementById('schoolPhase')?.value||'';
+  state.schoolInfo = {name:n, year:y, term:t, phase:ph};
+  document.getElementById('schoolBar').innerHTML = n ? `<strong>${esc(n)}</strong>${ph?' -- '+esc(ph):''} | ${esc(t)} ${esc(y)}` : 'No school configured -- go to Setup';
+}
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.tab-btn[onclick*="'${id}'"]`)?.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`tab-${id}`)?.classList.add('active');
+  if(id==='teachers') { rebuildAssignPanel(); populateQuickAssignSubject(); }
+  if(id==='areas'){ populateGradeSubjectSelects(); }
+  if(id==='rules'){ refreshRuleSelects(); renderBlacklists(); }
+  if(id==='generate'){ updateStats(); runCapacityCheck(); showPreGenWarnings(); }
+  if(id==='output'){ renderColorLegend(); }
+  updateStats();
+}
+
+function toggleStreams() {
+    const use = document.getElementById('useStreams').checked;
+    document.getElementById('singleStreamWrapper').style.display = use ? '' : 'none';
+    document.getElementById('singleStreamLabelWrapper').style.display = use ? '' : 'none';
+    document.getElementById('rangeStreamWrapper').style.display = use ? '' : 'none';
+    document.getElementById('rangeStreamLabelWrapper').style.display = use ? '' : 'none';
+    if (!use) {
+        state.gradeStreams = {};
+        state.gradeStreamNames = {};
+        for (let g of state.grades) {
+            state.gradeStreams[g] = 1;
+            state.gradeStreamNames[g] = [''];
+        }
+    }
+    renderGradeChips();
+    autoSaveState();
+}
+
+function addGrade(){
+  try {
+    const g = parseInt(document.getElementById('newGrade').value);
+    if(isNaN(g)||g<1||g>13){ showToast('Grade must be between 1 and 13','error'); return; }
+    let s = parseInt(document.getElementById('gradeStreams').value)||1;
+    if (!document.getElementById('useStreams').checked) s = 1;
+    const namesRaw = document.getElementById('gradeStreamNames').value;
+    const names = namesRaw ? namesRaw.split(',').map(n=>n.trim()).filter(Boolean) : [];
+    state.grades.add(g); state.gradeStreams[g] = s;
+    if (names.length >= s) state.gradeStreamNames[g] = names.slice(0,s);
+    else { const def=Array.from({length:s},(_,i)=>String.fromCharCode(65+i)); state.gradeStreamNames[g]=names.concat(def.slice(names.length)).slice(0,s); }
+    document.getElementById('newGrade').value = '';
+    renderGradeChips(); populateGradeSubjectSelects(); refreshRuleSelects(); initializeBulkFilters(); autoSaveState();
+    showToast(`Grade ${g} with ${s} stream(s) added`);
+  } catch(e) { showToast(e.message, 'error'); }
+}
+function addGradeRange(){
+  try {
+    const f=parseInt(document.getElementById('rangeFrom').value), t=parseInt(document.getElementById('rangeTo').value);
+    if(isNaN(f)||isNaN(t)||f<1||t>13||f>t){ showToast('Invalid range','error'); return; }
+    let s=parseInt(document.getElementById('rangeStreams').value)||1;
+    if (!document.getElementById('useStreams').checked) s = 1;
+    const namesRaw=document.getElementById('rangeStreamNames').value;
+    const names=namesRaw?namesRaw.split(',').map(n=>n.trim()).filter(Boolean):[];
+    for(let i=f;i<=t;i++){ state.grades.add(i); state.gradeStreams[i]=s; if(names.length>=s) state.gradeStreamNames[i]=names.slice(0,s); else { const def=Array.from({length:s},(_,j)=>String.fromCharCode(65+j)); state.gradeStreamNames[i]=names.concat(def.slice(names.length)).slice(0,s); } }
+    renderGradeChips(); populateGradeSubjectSelects(); refreshRuleSelects(); initializeBulkFilters(); autoSaveState();
+    showToast(`Grades ${f}-${t} with ${s} stream(s) added`);
+  } catch(e) { showToast(e.message, 'error'); }
+}
+function removeGrade(g){ state.grades.delete(g); delete state.gradeStreams[g]; delete state.gradeStreamNames[g]; for(let k of [...state.classRequirements.keys()]) if(k.startsWith(g+'|')) state.classRequirements.delete(k); renderGradeChips(); populateGradeSubjectSelects(); refreshRuleSelects(); initializeBulkFilters(); autoSaveState(); }
+function renderGradeChips(){
+  document.getElementById('gradeChips').innerHTML = [...state.grades].sort((a,b)=>a-b).map(g=>{
+    const streams=state.gradeStreams[g]||1; const names=state.gradeStreamNames[g]||[];
+    return `<span class="grade-chip">Grade ${g} (${streams} stream${streams>1?'s':''}: ${names.join(', ')}) <button onclick="removeGrade(${g})" title="Remove">&times;</button></span>`;
+  }).join('');
+}
+function bulkRemoveGrades(){
+  if(state.grades.size===0){ showToast('No grades','error'); return; }
+  const sel=prompt('Enter grades to remove (comma-separated) or "all":');
+  if(!sel) return;
+  let list=[]; if(sel.toLowerCase()==='all') list=[...state.grades]; else list=sel.split(',').map(g=>parseInt(g.trim())).filter(g=>!isNaN(g)&&state.grades.has(g));
+  if(list.length===0){ showToast('No valid grades','error'); return; }
+  if(!confirm(`Remove ${list.length} grade(s)?`)) return;
+  list.forEach(g=>removeGrade(g)); showToast(`Removed ${list.length} grade(s)`);
+}
+
+function addSubject(){
+  try {
+    const n=document.getElementById('subjectName').value.trim().toUpperCase();
+    if(!n){ showToast('Enter subject name','error'); return; }
+    const l=parseInt(document.getElementById('subjectLessons').value)||4;
+    if(state.subjects.has(n)){ showToast(`${n} already exists`,'error'); return; }
+    state.subjects.set(n,{defaultLessons:l}); colorFor(n,state.subjectColors);
+    document.getElementById('subjectName').value='';
+    renderSubjectList(); populateGradeSubjectSelects(); rebuildAssignPanel(); initializeBulkFilters(); populateQuickAssignSubject(); autoSaveState();
+    showToast(`${n} added with ${l} lessons/week`);
+  } catch(e) { showToast(e.message, 'error'); }
+}
+function removeSubject(n){ state.subjects.delete(n); state.subjectColors.delete(n); state.highPrioritySubjects.delete(n); for(let k of [...state.classRequirements.keys()]) if(k.endsWith('|'+n)) state.classRequirements.delete(k); renderSubjectList(); populateGradeSubjectSelects(); rebuildAssignPanel(); initializeBulkFilters(); populateQuickAssignSubject(); autoSaveState(); }
+function toggleHighPriority(subject, checked) {
+  if (checked) {
+    state.highPrioritySubjects.add(subject);
+  } else {
+    state.highPrioritySubjects.delete(subject);
+  }
+  renderSubjectList();
+  autoSaveState();
+}
+
+function renderSubjectList(){
+  const container = document.getElementById('subjectList');
+  if (!container) return;
+  container.innerHTML = [...state.subjects.entries()].map(([n,d]) => {
+    const color = state.subjectColors.get(n) || '#4f8eff';
+    const isHighPriority = state.highPrioritySubjects.has(n);
+    return `<div class="list-item">
+      <div class="list-item-info">
+        <div class="list-item-title">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;"></span>
+          ${esc(n)}
+          ${isHighPriority ? ' <span style="color:var(--accent4);font-size:0.7rem;">★ High Priority</span>' : ''}
+        </div>
+        <div class="list-item-sub">${d.defaultLessons} lessons/week default</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <label style="font-size:0.7rem;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:4px;">
+          <input type="checkbox" ${isHighPriority?'checked':''} 
+            onchange="toggleHighPriority('${esc(n).replace(/'/g,"\\'")}', this.checked)">
+          Daily
+        </label>
+        <button class="btn btn-red btn-sm" onclick="removeSubject('${esc(n).replace(/'/g,"\\'")}')">Remove</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty-state">No subjects added yet</div>';
+}
+function populateGradeSubjectSelects(){
+  const rg=document.getElementById('reqGrade'), rs=document.getElementById('reqSubject');
+  if(rg) rg.innerHTML='<option value="">[Select Grade]</option>'+[...state.grades].sort().map(g=>`<option value="${g}">Grade ${g}</option>`).join('');
+  if(rs) rs.innerHTML='<option value="">[Select Subject]</option>'+[...state.subjects.keys()].map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+}
+
+function addClassRequirement(){
+  const g=parseInt(document.getElementById('reqGrade').value), s=document.getElementById('reqSubject').value, l=parseInt(document.getElementById('reqLessons').value);
+  if(isNaN(g)||!s||isNaN(l)){ showToast('Fill all fields','error'); return; }
+  state.classRequirements.set(`${g}|${s}`,{grade:g,subject:s,requiredLessons:l}); renderRequirements(); autoSaveState();
+}
+function renderRequirements(){
+  document.getElementById('requirementsList').innerHTML = [...state.classRequirements.entries()].map(([k,v])=>`<div class="list-item"><span>Grade ${v.grade} -- ${esc(v.subject)}: <strong>${v.requiredLessons}</strong> lessons/week</span><button class="btn btn-red btn-sm" onclick="state.classRequirements.delete('${k}');renderRequirements();autoSaveState()">&times;</button></div>`).join('')||'<div class="empty-state">No overrides set</div>';
+}
+
+function generateTimeSlots(){
+  const start=document.getElementById('startTime').value, end=document.getElementById('endTime').value, dur=parseInt(document.getElementById('lessonDuration').value);
+  if(!start||!end||isNaN(dur)||dur<10){ showToast('Check time settings','error'); return; }
+  const patternStr=document.getElementById('lessonPattern').value||'2:2:2:2';
+  const pattern=patternStr.split(':').map(Number).filter(n=>!isNaN(n)&&n>0); if(!pattern.length) pattern.push(2);
+  const breaks=[{dur:parseInt(document.getElementById('shortBreakDuration').value)||15,type:'break',label:'Short Break'},{dur:parseInt(document.getElementById('teaBreakDuration').value)||20,type:'tea',label:'Tea Break'},{dur:parseInt(document.getElementById('lunchBreakDuration').value)||45,type:'lunch',label:'Lunch'}];
+  state.timeSlots=[]; let curr=t2m(start), endM=t2m(end), bIdx=0, lNum=0;
+  while(curr<endM && lNum<50){ const block=pattern[bIdx%pattern.length]; for(let i=0;i<block&&curr<endM;i++){ const s=m2t(curr); curr+=dur; const e=m2t(curr); state.timeSlots.push({time:`${s}-${e}`,type:'lesson',label:`L${++lNum}`}); } if(curr<endM&&breaks[bIdx]){ const b=breaks[bIdx], s=m2t(curr); curr+=b.dur; const e=m2t(curr); if(curr<=endM) state.timeSlots.push({time:`${s}-${e}`,type:b.type,label:b.label}); } bIdx++; if(bIdx>=pattern.length&&bIdx>=breaks.length) break; }
+  const csSlot=document.getElementById('commonSessionSlot'); if(csSlot) csSlot.innerHTML=lessonSlots().map((s,i)=>`<option value="${i}">${i+1}: ${s.time}</option>`).join('');
+  renderSlotsPreview(); autoSaveState(); showToast(`${lessonSlots().length} lesson slots generated`);
+}
+function renderSlotsPreview(){
+  const ls=lessonSlots(); document.getElementById('timeSlotsPreview').innerHTML=`<div class="banner banner-success">${ls.length} lesson slots -- ${state.timeSlots.filter(s=>s.type!=='lesson').length} break slots</div><div class="slot-grid">${state.timeSlots.map(s=>`<span class="slot-chip slot-${s.type}" title="${s.label}">${s.time}</span>`).join('')}</div>`;
+}
+
+let teachingAllStreams = {};
+
+function populateQuickAssignSubject() {
+    const sel = document.getElementById('quickAssignSubject');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select Subject</option>' +
+        [...state.subjects.keys()].sort().map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+}
+
+function applySubjectToAllGrades() {
+    const sub = document.getElementById('quickAssignSubject').value;
+    if (!sub) { showToast('Select a subject first', 'error'); return; }
+    const useStreams = document.getElementById('useStreams').checked;
+    let applied = 0;
+    for (let g of state.grades) {
+        const streams = useStreams ? (state.gradeStreams[g] || 1) : 1;
+        for (let si = 0; si < streams; si++) {
+            const uid = `${g}_${si}_${sub.replace(/\s+/g, '_')}`;
+            const chk = document.getElementById(`chk_${uid}`);
+            if (chk && !chk.disabled) {
+                chk.checked = true;
+                toggleLessonsInput(`inp_${uid}`, true);
+                applied++;
+            }
+        }
+    }
+    showToast(`Applied ${sub} to ${applied} class(es)`, 'success');
+}
+
+function rebuildAssignPanel(){
+  const panel=document.getElementById('teacherAssignPanel'); if(!panel) return;
+  if(!state.grades.size||!state.subjects.size){ panel.innerHTML='<div class="empty-state" style="margin-top:10px;">Add grades and subjects first</div>'; return; }
+  const streamsEnabled = document.getElementById('useStreams').checked;
+  const occupied=new Map();
+  for(let [tname,tdata] of state.teachers){ if(tname===state.editingTeacher) continue; for(let a of (tdata.assignments||[])){ occupied.set(`${a.grade}_${a.streamIndex}_${a.subject}`,tname); } }
+  let html='<div style="margin-top:14px;"><label>Subject Assignments</label><div class="assign-grid">';
+  for(let g of [...state.grades].sort((a,b)=>a-b)){
+    const streams=state.gradeStreams[g]||1; const names=state.gradeStreamNames[g]||Array.from({length:streams},(_,i)=>String.fromCharCode(65+i));
+    if(streamsEnabled && streams>1){
+      const allKey = `${state.editingTeacher||''}|${g}`;
+      let allChecked = teachingAllStreams[allKey] ?? false;
+      html+=`<div class="assign-card"><div class="assign-card-title">Grade ${g} (${streams} streams)</div>`;
+      html+=`<div style="margin-bottom:8px;"><label style="font-size:0.7rem;display:flex;align-items:center;gap:5px;"><input type="checkbox" id="allStreams_${g}" ${allChecked?'checked':''} onchange="toggleAllStreams(${g},this.checked)"> Select / Deselect all streams</label></div>`;
+      for(let si=0;si<streams;si++){
+        html+=`<div class="stream-block" id="streamBlock_${g}_${si}"><strong style="font-size:0.72rem;">${names[si]}</strong>`;
+        for(let [sub] of state.subjects){
+          if(state.subjectBlacklist.has(`${sub}|${g}`)) continue;
+          const uid=`${g}_${si}_${sub.replace(/\s+/g,'_')}`, okey=`${g}_${si}_${sub}`, owner=occupied.get(okey), isOwn=state.editingTeacher&&state.teachers.get(state.editingTeacher)?.assignments?.some(a=>a.grade===g&&a.streamIndex===si&&a.subject===sub), defLessons=effectiveLessons(g,sub);
+          if(owner&&!isOwn){ html+=`<div class="assign-row"><label>${esc(sub)} <span class="assigned-note">(${esc(owner)})</span></label></div>`; }
+          else { const checked=isOwn?'checked':''; html+=`<div class="assign-row"><label><input type="checkbox" id="chk_${uid}" ${checked} onchange="toggleLessonsInput('inp_${uid}',this.checked)"> ${esc(sub)}</label><input type="number" id="inp_${uid}" class="lessons-input" value="${defLessons}" min="1" max="20" style="display:${isOwn||checked?'block':'none'};"></div>`; }
+        }
+        html+=`</div>`;
+      }
+      html+=`</div>`;
+    } else {
+      html+=`<div class="assign-card"><div class="assign-card-title">Grade ${g}</div>`;
+      for(let [sub] of state.subjects){
+        if(state.subjectBlacklist.has(`${sub}|${g}`)) continue;
+        const uid=`${g}_0_${sub.replace(/\s+/g,'_')}`, okey=`${g}_0_${sub}`, owner=occupied.get(okey), isOwn=state.editingTeacher&&state.teachers.get(state.editingTeacher)?.assignments?.some(a=>a.grade===g&&a.subject===sub), defLessons=effectiveLessons(g,sub);
+        if(owner&&!isOwn){ html+=`<div class="assign-row"><label>${esc(sub)} <span class="assigned-note">(${esc(owner)})</span></label></div>`; }
+        else { const checked=isOwn?'checked':''; html+=`<div class="assign-row"><label><input type="checkbox" id="chk_${uid}" ${checked} onchange="toggleLessonsInput('inp_${uid}',this.checked)"> ${esc(sub)}</label><input type="number" id="inp_${uid}" class="lessons-input" value="${defLessons}" min="1" max="20" style="display:${isOwn||checked?'block':'none'};"></div>`; }
+      }
+      html+=`</div>`;
+    }
+  }
+  panel.innerHTML=html+'</div></div>'; initializeBulkFilters();
+}
+
+function toggleAllStreams(grade, checked) {
+  const allKey = `${state.editingTeacher||''}|${grade}`;
+  teachingAllStreams[allKey] = checked;
+  const streams = state.gradeStreams[grade]||1;
+  for(let si=0;si<streams;si++){
+    for(let [sub] of state.subjects){
+      const uid = `${grade}_${si}_${sub.replace(/\s+/g,'_')}`;
+      const chk = document.getElementById(`chk_${uid}`);
+      if(chk){
+        chk.checked = checked;
+        toggleLessonsInput(`inp_${uid}`, checked);
+      }
+    }
+  }
+  autoSaveState();
+}
+
+function toggleLessonsInput(id,show){ const el=document.getElementById(id); if(el) el.style.display=show?'block':'none'; }
+function autoFillCode(){ const nameEl=document.getElementById('teacherName'), codeEl=document.getElementById('teacherCode'); if(codeEl&&nameEl&&!codeEl._manuallySet) codeEl.value=genCode(nameEl.value); }
+
+function initializeBulkFilters(){
+  const gf=document.getElementById('bulkGradeFilter'), sf=document.getElementById('bulkSubjectFilter');
+  if(gf) gf.innerHTML='<option value="">All Grades</option>'+[...state.grades].sort((a,b)=>a-b).map(g=>`<option value="${g}">Grade ${g}</option>`).join('');
+  if(sf) sf.innerHTML='<option value="">All Subjects</option>'+[...state.subjects.keys()].sort().map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+}
+function bulkSelectAll(select){ document.querySelectorAll('#teacherAssignPanel input[type="checkbox"]:not([id^="allStreams"])').forEach(cb=>{ if(!cb.disabled){ cb.checked=select; const inp=document.getElementById(cb.id.replace('chk_','inp_')); if(inp) inp.style.display=select?'block':'none'; } }); }
+function filterByGrade(grade){ document.querySelectorAll('#teacherAssignPanel .assign-card').forEach(c=>{ const t=c.querySelector('.assign-card-title')?.textContent||''; c.style.display=!grade||t.includes(`Grade ${grade}`)?'block':'none'; }); }
+function filterBySubject(subject){ document.querySelectorAll('#teacherAssignPanel .assign-row').forEach(r=>{ const l=r.querySelector('label')?.textContent||''; r.style.display=!subject||l.includes(subject)?'flex':'none'; }); }
+function applyBulkLessons(){
+  const v=parseInt(document.getElementById('bulkLessonValue')?.value||'4'); if(isNaN(v)||v<1||v>20){ showToast('Enter 1-20','error'); return; }
+  const range=document.getElementById('bulkGradeRange')?.value; const tg=range?parseRangeInput(range):[]; let applied=0;
+  document.querySelectorAll('#teacherAssignPanel input[type="checkbox"]:checked:not([id^="allStreams"])').forEach(cb=>{ if(cb.disabled) return; if(tg.length>0){ const card=cb.closest('.assign-card'); const t=card?.querySelector('.assign-card-title')?.textContent||''; const m=t.match(/Grade (\d+)/); if(!m||!tg.includes(parseInt(m[1]))) return; } const inp=document.getElementById(cb.id.replace('chk_','inp_')); if(inp){ inp.value=v; applied++; } });
+  showToast(applied?`Set ${v} lessons for ${applied} assignments`:'No matching',applied?'success':'error');
+}
+function bulkAssignSubjects(){
+  const v=parseInt(document.getElementById('bulkLessonValue')?.value||'4'); if(isNaN(v)||v<1||v>20){ showToast('Enter 1-20','error'); return; }
+  const range=document.getElementById('bulkGradeRange')?.value; const tg=range?parseRangeInput(range):[]; const sf=document.getElementById('bulkSubjectFilter')?.value||''; let applied=0;
+  document.querySelectorAll('#teacherAssignPanel input[type="checkbox"]:not([id^="allStreams"])').forEach(cb=>{ if(cb.disabled) return; const card=cb.closest('.assign-card'); if(!card) return; const t=card.querySelector('.assign-card-title')?.textContent||''; const m=t.match(/Grade (\d+)/); if(!m) return; const g=parseInt(m[1]); if(tg.length>0&&!tg.includes(g)) return; const row=cb.closest('.assign-row'); const l=row?.querySelector('label')?.textContent||''; const sub=l.split('(')[0].trim(); if(sf&&sub!==sf) return; cb.checked=true; const inp=document.getElementById(cb.id.replace('chk_','inp_')); if(inp){ inp.style.display='block'; inp.value=v; applied++; } });
+  showToast(applied?`Bulk assigned ${applied} subjects`:'No matching',applied?'success':'error');
+}
+function bulkAssignTeacher(){
+  const name=document.getElementById('teacherName')?.value.trim(); if(!name){ showToast('Enter teacher name','error'); return; }
+  const sg=prompt('Grades (comma or "all"):'); if(!sg) return;
+  const ss=prompt('Subjects (comma or "all"):'); if(!ss) return;
+  const lpw=parseInt(prompt('Lessons per week:','4')||'4'); if(isNaN(lpw)||lpw<1) return;
+  const gl=sg.toLowerCase()==='all'?[...state.grades]:sg.split(',').map(g=>parseInt(g.trim())).filter(g=>!isNaN(g)&&state.grades.has(g));
+  const sl=ss.toLowerCase()==='all'?[...state.subjects.keys()]:ss.split(',').map(s=>s.trim().toUpperCase()).filter(s=>state.subjects.has(s));
+  let assigned=0;
+  gl.forEach(g=>{ const streams=state.gradeStreams[g]||1; for(let si=0;si<streams;si++){ sl.forEach(sub=>{ if(state.subjectBlacklist.has(`${sub}|${g}`)) return; const chk=document.getElementById(`chk_${g}_${si}_${sub.replace(/\s+/g,'_')}`); const inp=document.getElementById(`inp_${g}_${si}_${sub.replace(/\s+/g,'_')}`); if(chk&&!chk.disabled){ chk.checked=true; if(inp){ inp.style.display='block'; inp.value=lpw; } assigned++; } }); } });
+  showToast(`Pre-filled ${assigned} assignment(s)`);
+}
+function bulkBlacklistTeacher(){
+  const t=document.getElementById('blTeacher')?.value; if(!t){ showToast('Select teacher','error'); return; }
+  const sg=prompt('Grades (comma or "all"):'); if(!sg) return;
+  const gl=sg.toLowerCase()==='all'?[...state.grades]:sg.split(',').map(g=>parseInt(g.trim())).filter(g=>!isNaN(g)&&state.grades.has(g)); if(!gl.length){ showToast('No valid grades','error'); return; }
+  let added=0; gl.forEach(g=>{ const k=`${t}|${g}`; if(!state.blacklist.has(k)){ state.blacklist.add(k); added++; } });
+  renderBlacklists(); autoSaveState(); showToast(`Blocked ${t} from ${added} grades`);
+}
+
+function saveTeacher(){
+  try {
+    const name=document.getElementById('teacherName').value.trim(); if(!name){ showToast('Enter teacher name','error'); return; }
+    const codeInput=document.getElementById('teacherCode').value.trim().toUpperCase(); const code=codeInput||genCode(name);
+    const maxW=document.getElementById('maxWeeklyLessons').value; const maxLessons=maxW?parseInt(maxW):null;
+    const maxD=parseInt(document.getElementById('maxDailyLessons').value)||8;
+    const unavail=new Set(document.getElementById('teacherUnavailDays').value.split(',').map(d=>d.trim().toUpperCase()).filter(d=>['MON','TUE','WED','THU','FRI','SAT'].includes(d)));
+    const assignments=[];
+    const streamsEnabled = document.getElementById('useStreams').checked;
+
+    for(let g of state.grades){
+      const streams=state.gradeStreams[g]||1;
+      const names=state.gradeStreamNames[g]||Array.from({length:streams},(_,i)=>String.fromCharCode(65+i));
+      if(streamsEnabled && streams>1 && teachingAllStreams[`${name}|${g}`]){
+        for(let si=0;si<streams;si++){
+          for(let [sub] of state.subjects){
+            if(state.subjectBlacklist.has(`${sub}|${g}`)) continue;
+            const uid=`${g}_${si}_${sub.replace(/\s+/g,'_')}`;
+            const inp=document.getElementById(`inp_${uid}`);
+            if(inp){
+              assignments.push({grade:g,streamIndex:si,streamName:names[si]||String.fromCharCode(65+si),subject:sub,lessons:parseInt(inp.value)||effectiveLessons(g,sub)});
+            }
+          }
+        }
+      } else {
+        for(let si=0;si<streams;si++){
+          for(let [sub] of state.subjects){
+            if(state.subjectBlacklist.has(`${sub}|${g}`)) continue;
+            const uid=`${g}_${si}_${sub.replace(/\s+/g,'_')}`;
+            const chk=document.getElementById(`chk_${uid}`);
+            if(chk&&chk.checked){
+              const inp=document.getElementById(`inp_${uid}`);
+              assignments.push({grade:g,streamIndex:si,streamName:names[si]||String.fromCharCode(65+si),subject:sub,lessons:parseInt(inp?.value)||effectiveLessons(g,sub)});
+            }
+          }
+        }
+      }
+    }
+
+    if(!assignments.length){ showToast('Select at least one subject','error'); return; }
+    if(state.teachers.has(name)&&name!==state.editingTeacher){ showToast(`Teacher "${name}" already exists`,'error'); return; }
+    if(state.editingTeacher&&state.editingTeacher!==name){ state.teachers.delete(state.editingTeacher); state.teacherCodes.delete(state.editingTeacher); state.teacherColors.delete(state.editingTeacher); }
+    state.teachers.set(name,{maxLessons,maxPerDay:maxD,unavailDays:unavail,assignments,code,isSpecial:document.getElementById('specialTeacher')?.checked||false});
+    state.teacherCodes.set(name,code); colorFor(name,state.teacherColors); state.editingTeacher=null;
+    clearTeacherForm(); renderTeacherList(); refreshRuleSelects(); autoSaveState(); showToast(`${name} saved`);
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+function editTeacher(name){
+  const t=state.teachers.get(name); if(!t) return; state.editingTeacher=name;
+  document.getElementById('teacherName').value=name; document.getElementById('teacherCode').value=state.teacherCodes.get(name)||'';
+  document.getElementById('maxWeeklyLessons').value=t.maxLessons||''; document.getElementById('maxDailyLessons').value=t.maxPerDay||8;
+  document.getElementById('teacherUnavailDays').value=[...(t.unavailDays||[])].join(', ');
+  document.getElementById('specialTeacher').checked=t.isSpecial||false;
+  teachingAllStreams = {};
+  for(let a of t.assignments||[]){
+    const key = `${name}|${a.grade}`;
+    const streams = state.gradeStreams[a.grade]||1;
+    const indices = new Set(t.assignments.filter(x=>x.grade===a.grade).map(x=>x.streamIndex));
+    if(streams > 1 && indices.size === streams) teachingAllStreams[key] = true;
+  }
+  rebuildAssignPanel(); switchTab('teachers'); window.scrollTo(0,0);
+}
+function removeTeacher(name){ if(!confirm(`Remove "${name}"?`)) return; state.teachers.delete(name); state.teacherCodes.delete(name); state.teacherColors.delete(name); renderTeacherList(); refreshRuleSelects(); autoSaveState(); showToast(`${name} removed`); }
+function clearTeacherForm(){ ['teacherName','teacherCode','maxWeeklyLessons','teacherUnavailDays'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); document.getElementById('maxDailyLessons').value='8'; document.getElementById('specialTeacher').checked=false; state.editingTeacher=null; teachingAllStreams={}; rebuildAssignPanel(); }
+function renderTeacherList(){
+  document.getElementById('teacherList').innerHTML = [...state.teachers.entries()].map(([n,d])=>{
+    const code=state.teacherCodes.get(n)||genCode(n); const color=state.teacherColors.get(n)||'#4f8eff'; const subs=[...new Set((d.assignments||[]).map(a=>a.subject))];
+    return `<div class="list-item"><div class="list-item-info"><div class="list-item-title"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;"></span>${esc(n)} <span style="font-family:var(--mono);color:var(--accent);font-size:0.68rem;">[${code}]</span> ${d.isSpecial?'<span style="color:var(--accent4);">(Special)</span>':''}</div><div class="list-item-sub">Max: ${d.maxLessons||'-'}/wk, ${d.maxPerDay}/day | Off: ${[...(d.unavailDays||[])].join(',')||'None'}<br>${subs.map(s=>`<span style="background:${state.subjectColors.get(s)||'#333'};color:#080b14;padding:1px 5px;border-radius:10px;font-size:0.6rem;margin-right:3px;">${esc(s)}</span>`).join('')}
+${(() => {
+  const assigned = (d.assignments || []).reduce((sum, a) => sum + (Number(a.lessons) || 0), 0);
+  const maxL = Number(d.maxLessons) || 24;
+  const pct = Math.min(100, Math.round((assigned / maxL) * 100));
+  const col = pct > 100 ? 'var(--accent3)' : pct >= 80 ? 'var(--accent4)' : 'var(--accent2)';
+  return '<div style="display:flex;align-items:center;gap:6px;margin-top:4px;"><span style="font-size:0.62rem;font-weight:700;color:'+col+';">' + assigned + '/' + maxL + ' hrs (' + pct + '%)</span><div class="load-bar-bg" style="flex:1;max-width:140px;height:4px;"><div class="load-bar-fill" style="width:'+pct+'%;background:'+col+';"></div></div></div>';
+})()}</div></div><div class="list-actions"><button class="btn btn-ghost btn-sm" onclick="editTeacher('${esc(n).replace(/'/g,"\\'")}')">Edit</button><button class="btn btn-red btn-sm" onclick="removeTeacher('${esc(n).replace(/'/g,"\\'")}')">&times;</button></div></div>`;
+  }).join('')||'<div class="empty-state">No teachers added yet</div>';
+}
+
+function refreshRuleSelects(){
+  const teachers=[...state.teachers.keys()], grades=[...state.grades].sort(), subjects=[...state.subjects.keys()];
+  const fill=(id,opts)=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; };
+  fill('blTeacher','<option value="">[Select Teacher]</option>'+teachers.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join(''));
+  fill('blGrade','<option value="">[Select Grade]</option>'+grades.map(g=>`<option value="${g}">Grade ${g}</option>`).join(''));
+  fill('blSubject','<option value="">[Select Subject]</option>'+subjects.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join(''));
+  fill('blSubjGrade','<option value="">[Select Grade]</option>'+grades.map(g=>`<option value="${g}">Grade ${g}</option>`).join(''));
+}
+function addBlacklist(){ const t=document.getElementById('blTeacher')?.value, g=document.getElementById('blGrade')?.value; if(t&&g){ state.blacklist.add(`${t}|${g}`); renderBlacklists(); autoSaveState(); showToast('Block added'); } }
+function addSubjectBlacklist(){ const s=document.getElementById('blSubject')?.value, g=document.getElementById('blSubjGrade')?.value; if(s&&g){ state.subjectBlacklist.add(`${s}|${g}`); renderBlacklists(); autoSaveState(); showToast('Block added'); } }
+function renderBlacklists(){
+  document.getElementById('blacklistDisplay').innerHTML = [...state.blacklist].map(k=>`<div class="list-item"><span>${esc(k)}</span><button class="btn btn-red btn-sm" onclick="state.blacklist.delete('${k.replace(/'/g,"\\'")}');renderBlacklists();autoSaveState()">&times;</button></div>`).join('')||'<div class="empty-state">None</div>';
+  document.getElementById('subjBlacklistDisplay').innerHTML = [...state.subjectBlacklist].map(k=>`<div class="list-item"><span>${esc(k)}</span><button class="btn btn-red btn-sm" onclick="state.subjectBlacklist.delete('${k.replace(/'/g,"\\'")}');renderBlacklists();autoSaveState()">&times;</button></div>`).join('')||'<div class="empty-state">None</div>';
+}
+
+function runCapacityCheck(){
+  const ls=lessonSlots().length, days=getWorkingDays().length, cap=ls*days; let total=0;
+  for(let g of state.grades) for(let [s] of state.subjects) total+=effectiveLessons(g,s);
+  const el=document.getElementById('capacityMsg'); if(!cap) return;
+  const pct=Math.round(total/(cap*Math.max(state.grades.size,1))*100);
+  el.innerHTML=total>cap*state.grades.size?`<div class="banner banner-warn">Overloaded: ${total}/${cap*state.grades.size} (${pct}%)</div>`:`<div class="banner banner-success">OK: ${total}/${cap*state.grades.size} (${pct}%)</div>`;
+}
+function showPreGenWarnings(){
+  const w=[]; if(!state.grades.size) w.push('No grades'); if(!state.subjects.size) w.push('No subjects'); if(!state.teachers.size) w.push('No teachers'); if(!lessonSlots().length) w.push('No time slots');
+  for(let [sub] of state.subjects){ if(![...state.teachers.values()].some(t=>t.assignments?.some(a=>a.subject===sub))) w.push(`"${sub}" has no teacher`); }
+  document.getElementById('preGenWarnings').innerHTML=w.length?`<div class="banner banner-warn">${w.join('<br>')}</div>`:'';
+}
+
+function setGenScope(scope){ state.genScope=scope; document.querySelectorAll('.gen-option').forEach(o=>o.classList.remove('active')); document.getElementById(`opt-${scope}`)?.classList.add('active'); }
+let _loadInterval=null;
+function showLoading(){ if(document.getElementById('loadOverlay')) return; const o=document.createElement('div'); o.id='loadOverlay'; o.className='loading-overlay'; const msgs=['Building constraints','Assigning teachers','Optimising schedule','Checking conflicts','Finalising timetable']; let mi=0; o.innerHTML=`<div class="loading-box"><div class="spinner"><div class="sr"></div><div class="sr"></div><div class="sr"></div></div><div class="loading-title">Generating Timetable</div><div class="loading-sub" id="loadMsg">${msgs[0]}</div><div class="loading-bar"><div class="loading-fill"></div></div></div>`; document.body.appendChild(o); _loadInterval=setInterval(()=>{ const el=document.getElementById('loadMsg'); if(el) el.textContent=msgs[++mi%msgs.length]; },2000); }
+function hideLoading(){ if(_loadInterval){ clearInterval(_loadInterval); _loadInterval=null; } const o=document.getElementById('loadOverlay'); if(o){ o.style.opacity='0'; o.style.transition='opacity 0.3s'; setTimeout(()=>o.remove(),300); } }
+
+async function generateTimetable(){
+  const errs=[]; if(!state.grades.size) errs.push('No grades'); if(!state.subjects.size) errs.push('No subjects'); if(!state.teachers.size) errs.push('No teachers'); if(!lessonSlots().length) errs.push('No time slots'); if(errs.length){ showToast(errs.join(', '),'error'); return; }
+  const btn=document.getElementById('genBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner" style="width:20px;height:20px;margin-right:8px;"></span> Generating...';
+  state.commonSession={enabled:document.getElementById('commonSessionEnabled').value==='1',name:document.getElementById('commonSessionName').value||'Assembly',day:document.getElementById('commonSessionDay').value,slotIndex:parseInt(document.getElementById('commonSessionSlot').value)||0};
+  let targetGrades=[...state.grades].sort(); const tgInput=document.getElementById('targetGrades').value.trim(); if(tgInput){ const wanted=parseRangeInput(tgInput); targetGrades=targetGrades.filter(g=>wanted.includes(g)); }
+  const teachersSer={}; for(let [n,d] of state.teachers) teachersSer[n]={...d,unavailDays:[...(d.unavailDays||[])],isSpecial:d.isSpecial||false};
+  const payload={
+    schoolInfo:state.schoolInfo,
+    grades:[...state.grades],
+    gradeStreams:state.gradeStreams,
+    gradeStreamNames:state.gradeStreamNames,
+    subjects:[...state.subjects.entries()],
+    teachers:teachersSer,
+    classRequirements:Object.fromEntries(state.classRequirements),
+    blacklist:[...state.blacklist],
+    subjectBlacklist:[...state.subjectBlacklist],
+    timeSlots:state.timeSlots,
+    workingDays:getWorkingDays(),
+    targetGrades,
+    commonSession:state.commonSession,
+    highPrioritySubjects: [...state.highPrioritySubjects],
+    maxReductionPerSubject: 2,
+    fillerLabel: 'Study Period',
+    rules:{
+      ruleNoRepeat:document.getElementById('ruleNoRepeat').value,
+      maxTeacherPerDay:document.getElementById('maxTeacherPerDay').value
+    }
+  };
+  showLoading(); const startTime=performance.now();
+  try {
+    const BACKEND = getBackendUrl();
+    const response=await fetch(BACKEND,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if (!response.ok) throw new Error('Server responded with ' + response.status);
+    const result=await response.json();
+    if(result.success){
+      state.generated=result.timetable||{}; buildTeacherTimetables(state.generated);
+      const redPanel=document.getElementById('reductionsPanel');
+      const redText=document.getElementById('reductionsText');
+      const q = result.quality || {};
+      const qualityLine = q.label ?
+        `<br><em>Quality: <strong>${esc(q.label)}</strong> · Completeness ${Math.round((q.completeness||0)*100)}% · Packing ${Math.round((q.packing||0)*100)}%</em>` : '';
+      if((result.reductions && result.reductions.length) || (result.fillers && result.fillers > 0)){
+        let html = '';
+        if(result.reductions && result.reductions.length){
+          html += '<strong>Automatic reductions to enable a complete timetable (max 2 per subject):</strong><br>' +
+                  result.reductions.map(r=>esc(r)).join('<br>');
+        }
+        if(result.fillers > 0){
+          html += (html ? '<br>' : '') + `<strong>${result.fillers} slot(s) filled with “Study Period”</strong> — no teacher was available for those periods.`;
+        }
+        redText.innerHTML = html + qualityLine;
+        redPanel.style.display='block';
+      } else {
+        redText.innerHTML = '✅ Full timetable generated with zero reductions and zero study periods.' + qualityLine;
+        redPanel.style.display='block';
+      }
+      const vPanel=document.getElementById('violationsPanel');
+      if(result.violations?.length){
+        document.getElementById('violationsList').innerHTML=result.violations.map(v=>`<div class="viol-item"><strong>${esc(v.description)}</strong> <em>(${v.severity})</em></div>`).join('');
+        vPanel.style.display='block';
+      } else vPanel.style.display='none';
+      let outputHtml=''; const sorted=Object.entries(state.generated).sort((a,b)=>a[1].grade-b[1].grade||a[1].streamName.localeCompare(b[1].streamName));
+      if(state.genScope==='master'||state.genScope==='all'||state.genScope==='grades') outputHtml+=sorted.map(([k,d])=>renderClassBlock(k,d)).join('');
+      if(state.genScope==='teachers'||state.genScope==='all') outputHtml+=Object.keys(state.teacherTT).sort().map(t=>renderTeacherBlock(t)).join('');
+      document.getElementById('timetableOutput').innerHTML=outputHtml||'<div class="empty-state">Generated</div>';
+      document.getElementById('suggestionsPanel').style.display='none'; document.getElementById('suggestionsSummary').style.display='none';
+      document.getElementById('teacherAnalysis').style.display='block';
+      renderWorkloadAnalysis(); renderColorLegend(); switchTab('output');
+      showToast(`Timetable generated successfully${result.reductions?.length ? ' (some lessons were auto‑adjusted)' : ''}`);
+    } else {
+      displaySuggestions(result.suggestions);
+      switchTab('output');
+      document.getElementById('timetableOutput').innerHTML=`<div class="empty-state" style="padding:40px;"><h3 style="color:var(--accent3);">Generation Failed</h3><p>${esc(result.message||'')}</p></div>`;
+      showToast('Generation failed -- see suggestions','error');
+    }
+  } catch(e) {
+    showToast('Server unreachable. Please check your connection or the backend URL in Setup.','error');
+    console.error(e);
+  } finally { hideLoading(); btn.disabled=false; btn.innerHTML='GENERATE TIMETABLE'; }
+}
+
+function buildTeacherTimetables(solution){
+  state.teacherTT={}; const days=getWorkingDays(); const ls=lessonSlots().length;
+  for(let [n] of state.teachers){ state.teacherTT[n]={}; days.forEach(d=>state.teacherTT[n][d]=Array(ls).fill(null)); }
+  for(let cls in solution){ const data=solution[cls]; for(let day in data.days){ data.days[day].forEach((cell,i)=>{ if(cell?.teacher&&state.teacherTT[cell.teacher]) state.teacherTT[cell.teacher][day][i]={...cell,grade:data.grade,streamName:data.streamName}; }); } }
+}
+
+function displaySuggestions(suggestions){
+  const panel = document.getElementById('suggestionsPanel');
+  const summaryEl = document.getElementById('suggestionsSummary');
+  const summaryText = document.getElementById('summaryText');
+  if(!suggestions || suggestions.length===0){
+    panel.style.display='none';
+    if(summaryEl) summaryEl.style.display='none';
+    return;
+  }
+  const critical = suggestions.filter(s=>s.priority===1);
+  const other = suggestions.filter(s=>s.priority!==1);
+  let summary = '';
+  if(critical.length>0){
+    summary = `<strong>🔴 ${critical.length} critical issue(s) found:</strong> ${critical.map(s=>s.message).join(' | ')}`;
+    summary += `<br><em>Recommended action:</em> Address the critical issues first using the solutions below.`;
+  } else if(other.length>0){
+    summary = `<strong>🟡 ${other.length} improvement suggestion(s) available.</strong> Review and apply for a better timetable.`;
+  }
+  if(summary){
+    summaryText.innerHTML = summary;
+    if(summaryEl) summaryEl.style.display='block';
+  }
+  const list = document.getElementById('suggestionsList');
+  list.innerHTML = suggestions.map(s=>{
+    if(typeof s === 'object' && s.fixes?.length){
+      return `<div class="suggestion-item"><div class="suggestion-header">${esc(s.message||'')} ${s.teacher?`(${esc(s.teacher)})`:''} ${s.subject?`(${esc(s.subject)})`:''} ${s.grade?`(Grade ${esc(s.grade)})`:''}</div><ul class="suggestion-fixes">${s.fixes.map(f=>`<li>${esc(f)}</li>`).join('')}</ul></div>`;
+    } else {
+      return `<div class="suggestion-item"><div class="suggestion-header">${esc(s.message||s)}</div></div>`;
+    }
+  }).join('');
+  panel.style.display='block';
+}
+
+function renderOutput(){ const view=document.getElementById('exportView')?.value||'classes'; state.currentView=view; const out=document.getElementById('timetableOutput'); if(!Object.keys(state.generated).length){ out.innerHTML='<div class="empty-state">No timetable</div>'; return; } if(view==='teachers') out.innerHTML=Object.keys(state.teacherTT).sort().map(t=>renderTeacherBlock(t)).join(''); else { const sorted=Object.entries(state.generated).sort((a,b)=>a[1].grade-b[1].grade||a[1].streamName.localeCompare(b[1].streamName)); out.innerHTML=sorted.map(([k,d])=>renderClassBlock(k,d)).join(''); } document.getElementById('teacherAnalysis').style.display='block'; renderWorkloadAnalysis(); renderColorLegend(); }
+function switchView(){ const view=document.getElementById('exportView').value; state.currentView=view; const sw=document.getElementById('singleSelectWrap'); if(view==='single'){ sw.style.display='block'; populateSingleSelect(); } else sw.style.display='none'; renderOutput(); }
+function populateSingleSelect(){ const sel=document.getElementById('singleSelect'), sorted=Object.entries(state.generated).sort((a,b)=>a[1].grade-b[1].grade); sel.innerHTML='<option value="">[Select]</option>'+sorted.map(([k,d])=>`<option value="class_${k}">Class: Grade ${d.grade} - ${d.streamName}</option>`).join('')+Object.keys(state.teacherTT).sort().map(t=>`<option value="teacher_${t}">Teacher: ${esc(t)}</option>`).join(''); }
+function renderSingleView(){ const val=document.getElementById('singleSelect').value, out=document.getElementById('timetableOutput'); if(!val){ out.innerHTML=''; return; } if(val.startsWith('class_')){ const key=val.slice(6), d=state.generated[key]; out.innerHTML=d?renderClassBlock(key,d):'<div class="empty-state">Not found</div>'; } else { const teacher=val.slice(8); out.innerHTML=renderTeacherBlock(teacher); } }
+
+function renderClassBlock(key,data){
+  const days=getWorkingDays(); const ls=lessonSlots(); const useCodes=document.getElementById('useTeacherCodes')?.value==='1'; const colorMode=document.getElementById('colorCodeBy')?.value||'none';
+  let html=`<div class="timetable-block"><div class="tt-header"><h2>Grade ${data.grade} - ${esc(data.streamName)}</h2><span style="font-size:0.7rem;color:var(--text2);">${esc(state.schoolInfo.name)||''}</span></div><div class="tt-wrap"><table><thead><tr><th>Day</th>`;
+  state.timeSlots.forEach(s=>{ if(s.type==='lesson') html+=`<th>${s.time}</th>`; else html+=`<th style="min-width:55px;">${s.time}<br><span style="font-size:0.55rem;">${s.label||''}</span></th>`; }); html+='</tr></thead><tbody>';
+  days.forEach(day=>{ html+=`<tr><td class="day-cell">${day}</td>`; state.timeSlots.forEach(slot=>{ if(slot.type!=='lesson'){ html+=`<td class="cell-${slot.type}">${slot.label||''}</td>`; return; } const li=ls.findIndex(s=>s.time===slot.time); if(state.commonSession.enabled&&day===state.commonSession.day&&li===state.commonSession.slotIndex){ html+=`<td class="cell-common"><div class="subj">${esc(state.commonSession.name)}</div></td>`; return; } const cell=data.days?.[day]?.[li];
+  if(cell){
+    if(cell.isFiller){
+      html+=`<td class="cell-free" style="background:rgba(122,138,170,0.08);"><span style="font-size:0.62rem;color:var(--text2);font-style:italic;">Study Period</span></td>`;
+    } else {
+      const colorKey=colorMode==='subject'?cell.subject:colorMode==='teacher'?cell.teacher:null;
+      const borderColor=colorKey?colorFor(colorKey,colorMode==='subject'?state.subjectColors:state.teacherColors):'transparent';
+      const teacherDisplay=useCodes?(state.teacherCodes.get(cell.teacher)||genCode(cell.teacher)):cell.teacher;
+      html+=`<td class="cell-lesson" style="border-left:3px solid ${borderColor};cursor:pointer;" onclick="if(typeof openRepair==='function')openRepair('${esc(key)}','${day}',${li})" title="Click to relocate lesson"><span class="subj">${esc(cell.subject)}</span><span class="tchr">${esc(teacherDisplay)}</span></td>`;
+    }
+  } else {
+    html+=`<td class="cell-free"><span>-</span></td>`;
+  }
+  }); html+='</tr>'; });
+  return html+'</tbody></table></div></div>';
+}
+
+function renderTeacherBlock(teacher){
+  const days=getWorkingDays(); const ls=lessonSlots(); const timetable=state.teacherTT[teacher]; if(!timetable) return '';
+  let totalLessons=0; days.forEach(d=>ls.forEach((_,i)=>{ if(timetable[d]?.[i]) totalLessons++; }));
+  const tdata=state.teachers.get(teacher); const code=state.teacherCodes.get(teacher)||genCode(teacher);
+  let html=`<div class="timetable-block"><div class="tt-header"><h2>${esc(teacher)} <span style="font-family:var(--mono);color:var(--accent);font-size:0.72rem;">[${code}]</span> ${tdata?.isSpecial?'<span style="color:var(--accent4);">(Special)</span>':''}</h2><span style="font-size:0.7rem;color:var(--text2);">${totalLessons} lessons/wk</span></div><div class="tt-wrap"><table><thead><tr><th>Day</th>`;
+  state.timeSlots.forEach(s=>{ if(s.type==='lesson') html+=`<th>${s.time}</th>`; else html+=`<th style="min-width:55px;">${s.time}<br><span style="font-size:0.55rem;">${s.label||''}</span></th>`; }); html+='</tr></thead><tbody>';
+  days.forEach(day=>{ html+=`<tr><td class="day-cell">${day}</td>`; state.timeSlots.forEach(slot=>{ if(slot.type!=='lesson'){ html+=`<td class="cell-${slot.type}">${slot.label||''}</td>`; return; } const li=ls.findIndex(s=>s.time===slot.time); if(state.commonSession.enabled&&day===state.commonSession.day&&li===state.commonSession.slotIndex){ html+=`<td class="cell-common"><div class="subj">${esc(state.commonSession.name)}</div></td>`; return; } const cell=timetable[day]?.[li]; if(cell){ const subColor=state.subjectColors.get(cell.subject)||'var(--border2)'; html+=`<td class="cell-lesson" style="border-left:3px solid ${subColor};"><span class="subj">${esc(cell.subject)}</span><span class="cls">Grade ${cell.grade} ${esc(cell.streamName||'')}</span></td>`; } else html+=`<td class="cell-free"><span>FREE</span></td>`; }); html+='</tr>'; });
+  return html+'</tbody></table></div></div>';
+}
+
+function renderColorLegend(){
+  const mode=document.getElementById('colorCodeBy')?.value||'none'; const el=document.getElementById('colorLegend'); if(!el) return;
+  if(mode==='none'){ el.style.display='none'; return; } const map=mode==='subject'?state.subjectColors:state.teacherColors;
+  el.style.display='flex'; el.innerHTML=[...map.entries()].map(([name,color])=>`<div class="legend-item"><div class="legend-dot" style="background:${color};"></div><span>${esc(name)}</span></div>`).join('');
+}
+
+function renderWorkloadAnalysis(){
+  const days=getWorkingDays(); const ls=lessonSlots(); let barsHtml='', freeHtml='';
+  for(let [teacher,tt] of Object.entries(state.teacherTT)){
+    let total=0, free=[]; days.forEach(d=>ls.forEach((slot,i)=>{ if(tt[d]?.[i]) total++; else free.push(`${d} ${slot.time}`); }));
+    const tdata=state.teachers.get(teacher); const max=tdata?.maxLessons||null; const pct=max?Math.min(100,Math.round(total/max*100)):null; const overload=max&&total>max;
+    barsHtml+=`<div style="padding:6px 0;border-bottom:1px solid var(--border);"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><strong style="font-size:0.78rem;">${esc(teacher)}</strong><span style="font-size:0.7rem;color:${overload?'var(--accent3)':'var(--text2)'};">${total}${max?'/'+max:''}</span></div>${max?`<div class="load-bar-bg"><div class="load-bar-fill" style="width:${pct}%;background:${overload?'var(--accent3)':pct>85?'var(--accent4)':'var(--accent2)'};"></div></div>`:''}</div>`;
+    if(free.length) freeHtml+=`<div class="list-item"><div class="list-item-info"><div class="list-item-title">${esc(teacher)}</div><div class="list-item-sub">${free.slice(0,5).join(', ')}${free.length>5?` +${free.length-5} more`:''}</div></div><span class="fp-badge">${free.length} free</span></div>`;
+  }
+  document.getElementById('teacherLoadBars').innerHTML=barsHtml||'<div class="empty-state">No data</div>';
+  document.getElementById('teacherFreeperiods').innerHTML=freeHtml||'<div class="empty-state">All teachers fully scheduled</div>';
+}
+
+function getDeviceCanvasScale(){ const isLowEnd=navigator.deviceMemory<4||window.innerWidth<400; const q=document.getElementById('pdfQuality'); const base=parseFloat(q?.value||'1.5'); return isLowEnd?Math.min(base,1.2):base; }
+function showProgress(title,detail=''){ const overlay=document.getElementById('progressOverlay'); if(overlay){ document.getElementById('progressTitle').textContent=title; document.getElementById('progressDetail').textContent=detail; overlay.style.display='flex'; } }
+function hideProgress(){ const overlay=document.getElementById('progressOverlay'); if(overlay) overlay.style.display='none'; }
+
+function updateExportOptions(){
+  const type=document.getElementById('exportType').value, div=document.getElementById('singleItemSelect'), sel=document.getElementById('singleItemDropdown');
+  if(type==='singleGrade'){ div.style.display='block'; sel.innerHTML=[...state.grades].sort().map(g=>`<option value="grade_${g}">Grade ${g}</option>`).join(''); }
+  else if(type==='singleTeacher'){ div.style.display='block'; sel.innerHTML=[...state.teachers.keys()].sort().map(t=>`<option value="teacher_${t}">${esc(t)}</option>`).join(''); }
+  else{ div.style.display='none'; }
+}
+
+function getExportContent(){
+  const type=document.getElementById('exportType').value; let html='<div style="font-family:Inter,sans-serif;background:#fff;padding:20px;">';
+  html+=`<div style="text-align:center;margin-bottom:20px;"><h1>${esc(state.schoolInfo.name||'School')}</h1><p>${state.schoolInfo.term} ${state.schoolInfo.year}</p></div>`;
+  if(type==='all'||type==='allClasses'){ Object.entries(state.generated).sort((a,b)=>a[1].grade-b[1].grade).forEach(([k,d])=>{ html+=renderClassBlock(k,d); }); }
+  if(type==='all'||type==='allTeachers'){ Object.keys(state.teacherTT).sort().forEach(t=>{ html+=renderTeacherBlock(t); }); }
+  if(type==='singleGrade'){ const g=parseInt(document.getElementById('singleItemDropdown').value.replace('grade_','')); Object.entries(state.generated).filter(([k,d])=>d.grade===g).forEach(([k,d])=>{ html+=renderClassBlock(k,d); }); }
+  if(type==='singleTeacher'){ const t=document.getElementById('singleItemDropdown').value.replace('teacher_',''); html+=renderTeacherBlock(t); }
+  html+='</div>'; return html;
+}
+
+async function exportAsPDF(){
+  const content=getExportContent(); const div=document.createElement('div'); div.innerHTML=content; div.style.cssText='position:absolute;left:-9999px;background:#fff;padding:20px;'; document.body.appendChild(div);
+  const scale=getDeviceCanvasScale(); showProgress('Preparing PDF',`Rendering at ${Math.round(scale*100)}%`);
+  try{
+    const canvas=await html2canvas(div,{scale,backgroundColor:'#ffffff',logging:false,useCORS:true}); document.body.removeChild(div); showProgress('Building PDF','');
+    const {jsPDF}=window.jspdf; const size=document.getElementById('pdfSize').value, orient=document.getElementById('pdfOrient').value;
+    const fmts={a3:[420,297],a4:[297,210],legal:[356,216]}; let fmt=fmts[size]||fmts.a3; if(orient==='portrait') fmt=[fmt[1],fmt[0]];
+    const pdf=new jsPDF({orientation:orient,unit:'mm',format:fmt}); const pw=pdf.internal.pageSize.getWidth(); const ph=(canvas.height*pw)/canvas.width;
+    pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,pw,ph); pdf.save(`timetable_${state.schoolInfo.name||'school'}_${new Date().toISOString().slice(0,10)}.pdf`); showToast('PDF saved');
+  } catch(e){ showToast('PDF failed: '+e.message,'error'); } finally { hideProgress(); }
+}
+
+async function exportAsImage(){
+  const content=getExportContent(); const div=document.createElement('div'); div.innerHTML=content; div.style.cssText='position:absolute;left:-9999px;background:#fff;padding:20px;'; document.body.appendChild(div);
+  showProgress('Preparing image');
+  try{
+    const canvas=await html2canvas(div,{scale:2,backgroundColor:'#ffffff',logging:false}); document.body.removeChild(div);
+    const a=document.createElement('a'); a.download=`timetable_${state.schoolInfo.name||'school'}_${new Date().toISOString().slice(0,10)}.png`; a.href=canvas.toDataURL('image/png'); a.click(); showToast('Image saved');
+  } catch(e){ showToast('Image failed: '+e.message,'error'); } finally { hideProgress(); }
+}
+
+async function exportAllPDF(){
+  if(!Object.keys(state.generated).length){ showToast('No timetable','error'); return; }
+  const scale=getDeviceCanvasScale(); const total=Object.keys(state.generated).length+Object.keys(state.teacherTT).length; showProgress('Preparing master PDF',`${total} pages`);
+  try{
+    const {jsPDF}=window.jspdf; const size=document.getElementById('pdfSize').value, orient=document.getElementById('pdfOrient').value;
+    const fmts={a3:[420,297],a4:[297,210],legal:[356,216]}; let fmt=fmts[size]||fmts.a3; if(orient==='portrait') fmt=[fmt[1],fmt[0]];
+    const pdf=new jsPDF({orientation:orient,unit:'mm',format:fmt});
+    const sorted=Object.entries(state.generated).sort((a,b)=>a[1].grade-b[1].grade); let first=true, n=0;
+    for(let [key,data] of sorted){ n++; showProgress('Classes',`Grade ${data.grade} (${n}/${total})`); const div=document.createElement('div'); div.innerHTML=renderClassBlock(key,data); div.style.cssText='position:absolute;left:-9999px;background:#fff;padding:20px;'; document.body.appendChild(div); const canvas=await html2canvas(div,{scale,backgroundColor:'#ffffff'}); document.body.removeChild(div); const pw=pdf.internal.pageSize.getWidth(); const ph=(canvas.height*pw)/canvas.width; if(!first) pdf.addPage(); first=false; pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,pw,ph); if(scale<1.5) await new Promise(r=>setTimeout(r,30)); }
+    for(let teacher of Object.keys(state.teacherTT).sort()){ n++; showProgress('Teachers',`${teacher} (${n}/${total})`); const div=document.createElement('div'); div.innerHTML=renderTeacherBlock(teacher); div.style.cssText='position:absolute;left:-9999px;background:#fff;padding:20px;'; document.body.appendChild(div); const canvas=await html2canvas(div,{scale,backgroundColor:'#ffffff'}); document.body.removeChild(div); const pw=pdf.internal.pageSize.getWidth(); const ph=(canvas.height*pw)/canvas.width; pdf.addPage(); pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,pw,ph); if(scale<1.5) await new Promise(r=>setTimeout(r,30)); }
+    pdf.save(`${state.schoolInfo.name||'School'}_Master_${new Date().toISOString().slice(0,10)}.pdf`); showToast(`Master PDF saved (${total} pages)`);
+  } catch(e){ showToast('Export failed: '+e.message,'error'); } finally { hideProgress(); }
+}
+
+function saveConfig(){
+  const data={schoolInfo:state.schoolInfo,grades:[...state.grades],gradeStreams:state.gradeStreams,gradeStreamNames:state.gradeStreamNames,subjects:[...state.subjects.entries()],classRequirements:[...state.classRequirements.entries()],teachers:Object.fromEntries([...state.teachers.entries()].map(([k,v])=>[k,{...v,unavailDays:[...(v.unavailDays||[])],isSpecial:v.isSpecial||false}])),teacherCodes:Object.fromEntries(state.teacherCodes),teacherColors:Object.fromEntries(state.teacherColors),subjectColors:Object.fromEntries(state.subjectColors),highPrioritySubjects:[...state.highPrioritySubjects],blacklist:[...state.blacklist],subjectBlacklist:[...state.subjectBlacklist],timeSlots:state.timeSlots,workingDays:document.getElementById('workingDays')?.value||'5',startTime:document.getElementById('startTime')?.value||'07:50',endTime:document.getElementById('endTime')?.value||'14:40',lessonDuration:document.getElementById('lessonDuration')?.value||'40',lessonPattern:document.getElementById('lessonPattern')?.value||'2:2:2:2',shortBreak:document.getElementById('shortBreakDuration')?.value||'15',teaBreak:document.getElementById('teaBreakDuration')?.value||'20',lunchBreak:document.getElementById('lunchBreakDuration')?.value||'45',rules:{ruleNoRepeat:document.getElementById('ruleNoRepeat')?.value||'0',maxTeacherPerDay:document.getElementById('maxTeacherPerDay')?.value||'8',useTeacherCodes:document.getElementById('useTeacherCodes')?.value||'0',colorCodeBy:document.getElementById('colorCodeBy')?.value||'none'},commonSession:state.commonSession,streamsEnabled:document.getElementById('useStreams')?.checked??true,backendUrl:document.getElementById('backendUrl')?.value||state.backendUrl,version:'28.6'};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`eduschedule_${(state.schoolInfo.name||'config').replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.json`; a.click(); showToast('Config exported');
+}
+function loadConfig(){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json'; inp.onchange=e=>{ const f=e.target.files[0]; if(!f) return; const reader=new FileReader(); reader.onload=ev=>{ try{ const d=JSON.parse(ev.target.result); if(d.schoolInfo) state.schoolInfo=d.schoolInfo; document.getElementById('schoolName').value=state.schoolInfo.name||''; document.getElementById('schoolYear').value=state.schoolInfo.year||'2025'; document.getElementById('schoolTerm').value=state.schoolInfo.term||'Term 1'; document.getElementById('schoolPhase').value=state.schoolInfo.phase||''; updateSchoolBar(); state.grades=new Set(d.grades||[]); state.gradeStreams=d.gradeStreams||{}; state.gradeStreamNames=d.gradeStreamNames||{}; state.subjects=new Map(d.subjects||[]); state.classRequirements=new Map(d.classRequirements||[]); state.teachers=new Map(Object.entries(d.teachers||{}).map(([k,v])=>[k,{...v,unavailDays:new Set(v.unavailDays||[])}])); state.teacherCodes=new Map(Object.entries(d.teacherCodes||{})); state.teacherColors=new Map(Object.entries(d.teacherColors||{})); state.subjectColors=new Map(Object.entries(d.subjectColors||{})); state.highPrioritySubjects=new Set(d.highPrioritySubjects||[]); for(let [s] of state.subjects) if(!state.subjectColors.has(s)) colorFor(s,state.subjectColors); for(let [t] of state.teachers) if(!state.teacherColors.has(t)) colorFor(t,state.teacherColors); state.blacklist=new Set(d.blacklist||[]); state.subjectBlacklist=new Set(d.subjectBlacklist||[]); state.timeSlots=d.timeSlots||[]; if(d.streamsEnabled!==undefined) document.getElementById('useStreams').checked=d.streamsEnabled; if(d.backendUrl) document.getElementById('backendUrl').value=d.backendUrl; toggleStreams(); if(d.startTime) document.getElementById('startTime').value=d.startTime; if(d.endTime) document.getElementById('endTime').value=d.endTime; if(d.lessonDuration) document.getElementById('lessonDuration').value=d.lessonDuration; if(d.lessonPattern) document.getElementById('lessonPattern').value=d.lessonPattern; if(d.shortBreak) document.getElementById('shortBreakDuration').value=d.shortBreak; if(d.teaBreak) document.getElementById('teaBreakDuration').value=d.teaBreak; if(d.lunchBreak) document.getElementById('lunchBreakDuration').value=d.lunchBreak; if(d.workingDays) document.getElementById('workingDays').value=d.workingDays; if(d.rules){ document.getElementById('ruleNoRepeat').value=d.rules.ruleNoRepeat||'0'; document.getElementById('maxTeacherPerDay').value=d.rules.maxTeacherPerDay||'8'; document.getElementById('useTeacherCodes').value=d.rules.useTeacherCodes||'0'; document.getElementById('colorCodeBy').value=d.rules.colorCodeBy||'none'; } if(d.commonSession) state.commonSession=d.commonSession; if(d.commonSession){ document.getElementById('commonSessionEnabled').value=d.commonSession.enabled?'1':'0'; document.getElementById('commonSessionName').value=d.commonSession.name||'Assembly'; document.getElementById('commonSessionDay').value=d.commonSession.day||'FRI'; } const csSlot=document.getElementById('commonSessionSlot'); if(csSlot) csSlot.innerHTML=lessonSlots().map((s,i)=>`<option value="${i}" ${i===state.commonSession.slotIndex?'selected':''}>${i+1}: ${s.time}</option>`).join(''); renderGradeChips(); renderSubjectList(); renderTeacherList(); renderRequirements(); renderBlacklists(); populateGradeSubjectSelects(); refreshRuleSelects(); initializeBulkFilters(); populateQuickAssignSubject(); if(state.timeSlots.length) renderSlotsPreview(); updateStats(); showToast('Config loaded'); } catch(err){ showToast('Failed: '+err.message,'error'); } }; reader.readAsText(f); }; inp.click();
+}
+function resetAll(){ if(confirm('Reset ALL data?')){ localStorage.clear(); location.reload(); } }
+
+document.addEventListener('DOMContentLoaded',()=>{
+  autoRestoreState();
+  generateTimeSlots();
+  updateSchoolBar();
+  renderSubjectList();
+  const codeEl=document.getElementById('teacherCode');
+  if(codeEl) codeEl.addEventListener('input',()=>{ codeEl._manuallySet=codeEl.value.length>0; });
+  initializeBulkFilters();
+  populateQuickAssignSubject();
+  updateStats();
+});
+</script>
+</body>
 </html>
